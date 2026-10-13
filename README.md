@@ -1,16 +1,16 @@
 # Aqua Danmark ProSOFT 10 for Home Assistant
 
-Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. It has **not yet been tested against a running Home Assistant installation**, so the first release is an experimental beta.
+Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. Version 0.1.2 has been tested on one running Home Assistant installation with a Raspberry Pi Bluetooth adapter. Other devices and adapter setups may behave differently.
 
 The integration reads the device over Bluetooth every five minutes. It does not change settings or start regeneration.
 
 | Sensor | Source | Unit | Status |
 |---|---|---|---|
-| Remaining treated water | `1161` | L | Confirmed on device |
-| Salt remaining | `1006` | kg | Response confirmed; unit inferred from app display |
-| Salt level | `1006 / 1004` | % | Formula inferred; `1004` has not been tested yet |
-| Total treated water | `1169` | m³ | Confirmed on device and in app formatting |
-| Regeneration | `1174` | none / in progress / scheduled | Confirmed for value `0`; mapping from app code |
+| Remaining treated water | `1161` | L | Confirmed in Home Assistant |
+| Salt remaining | `1006` | kg | Confirmed in Home Assistant; unit inferred from app display |
+| Salt level | `1006 / 1004` | % | Confirmed in Home Assistant at 85%, matching the app |
+| Total treated water | `1169` | m³ | Confirmed in Home Assistant and app formatting |
+| Regeneration | `1174` | none / in progress / scheduled | Value `0` confirmed in Home Assistant; other mappings from app code |
 
 Unavailable readings appear as unknown. The total-water sensor is a cumulative meter suitable for Home Assistant water statistics; its state may change only after the device increments a whole cubic metre.
 
