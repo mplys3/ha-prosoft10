@@ -66,11 +66,6 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
             finally:
                 await client.disconnect()
         except (BleakError, TimeoutError, OSError) as error:
-            if "available connection slot" in str(error).lower():
-                raise UpdateFailed(
-                    "Bluetooth adapter has no available connection to ProSOFT 10; "
-                    "disconnect the phone app and check available Bluetooth slots"
-                ) from error
             raise UpdateFailed(
                 f"Unable to communicate with {self.address}: {error}"
             ) from error

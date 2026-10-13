@@ -1,6 +1,6 @@
 # Aqua Danmark ProSOFT 10 for Home Assistant
 
-Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. Version 0.1.2 has been tested on one running Home Assistant installation with a Raspberry Pi Bluetooth adapter. Other devices and adapter setups may behave differently.
+Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. Version 0.1.2 has been tested on one running Home Assistant installation with a Raspberry Pi Bluetooth adapter. Version 0.1.3 improves connection error reporting; it has not yet been tested against the device. Other devices and adapter setups may behave differently.
 
 The integration reads the device over Bluetooth every five minutes. It does not change settings or start regeneration.
 
@@ -33,7 +33,7 @@ HACS checks the GitHub repository for later versions. Install updates from HACS 
 ## Troubleshooting
 
 - If setup says the device is out of range, make sure Home Assistant's Bluetooth adapter or proxy supports active connections and that the iPhone app is disconnected.
-- If setup reports no available Bluetooth connection slot while advertisements are still visible, disconnect both the Aqua Danmark app and nRF Connect, wait briefly, and try again. The integration retries transient connection failures, but it cannot take over a connection held by another client or create an extra adapter slot.
+- If setup reports a Bluetooth connection error, read the full error detail: a device seen earlier may no longer be visible to a connectable scanner, even when Home Assistant has free connection slots. Check the Bluetooth Advertisement Monitor for a current advertisement from the device. If the phone app is connected, disconnect it before Home Assistant tries again.
 - If manual setup is needed, use the Bluetooth address reported by Home Assistant's Bluetooth integration or a scanner near the Home Assistant host. iOS may show a different address because BLE devices can use private addresses.
 - If only some values are unknown, the device may not support the corresponding parameter. The salt percentage requires both `1006` and `1004`.
 - Enable debug logging for `custom_components.prosoft10` to see which parameter fails. Never share full debug logs without checking for identifiers.
