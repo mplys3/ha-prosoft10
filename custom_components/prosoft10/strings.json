@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {"title": "Aqua Danmark ProSOFT 10", "data": {"address": "Bluetooth address"}},
+      "confirm": {"title": "Connect to ProSOFT 10", "description": "Confirm that this is your water softener."}
+    },
+    "error": {"invalid_address": "Enter a Bluetooth address like AA:BB:CC:DD:EE:FF"},
+    "abort": {"already_configured": "This device is already configured", "not_connectable": "This Bluetooth device cannot be connected to"}
+  },
+  "entity": {
+    "sensor": {
+      "water_remaining": {"name": "Remaining treated water"},
+      "salt_remaining": {"name": "Salt remaining"},
+      "salt_level": {"name": "Salt level"},
+      "total_treated_water": {"name": "Total treated water"},
+      "regeneration": {"name": "Regeneration", "state": {"none": "None", "in_progress": "In progress", "scheduled": "Scheduled", "unknown": "Unknown"}}
+    }
+  }
+}
