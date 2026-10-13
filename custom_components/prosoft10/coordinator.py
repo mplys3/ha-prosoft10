@@ -7,7 +7,7 @@ import logging
 
 from bleak import BleakClient
 from bleak.exc import BleakError
-from bleak_retry_connector import BleakOutOfConnectionSlotsError, establish_connection
+from bleak_retry_connector import establish_connection
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -65,12 +65,12 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
                         _LOGGER.debug("Parameter %s unavailable: %s", code, error)
             finally:
                 await client.disconnect()
-        except BleakOutOfConnectionSlotsError as error:
-            raise UpdateFailed(
-                "Bluetooth adapter has no available connection to ProSOFT 10; "
-                "disconnect the phone app and check available Bluetooth slots"
-            ) from error
         except (BleakError, TimeoutError, OSError) as error:
+            if "available connection slot" in str(error).lower():
+                raise UpdateFailed(
+                    "Bluetooth adapter has no available connection to ProSOFT 10; "
+                    "disconnect the phone app and check available Bluetooth slots"
+                ) from error
             raise UpdateFailed(
                 f"Unable to communicate with {self.address}: {error}"
             ) from error
