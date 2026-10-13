@@ -1,14 +1,14 @@
 {
   "domain": "prosoft10",
   "name": "Aqua Danmark ProSOFT 10",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "documentation": "https://github.com/mplys3/ha-prosoft10",
   "issue_tracker": "https://github.com/mplys3/ha-prosoft10/issues",
   "codeowners": ["@mplys3"],
   "config_flow": true,
-  "dependencies": ["bluetooth"],
+  "dependencies": ["bluetooth", "bluetooth_adapters"],
   "bluetooth": [{"local_name": "ProSOFT*"}],
   "integration_type": "device",
   "iot_class": "local_polling",
-  "requirements": []
+  "requirements": ["bleak-retry-connector==4.7.1"]
 }

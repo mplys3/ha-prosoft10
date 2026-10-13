@@ -7,6 +7,7 @@ import logging
 
 from bleak import BleakClient
 from bleak.exc import BleakError
+from bleak_retry_connector import BleakOutOfConnectionSlotsError, establish_connection
 from homeassistant.components import bluetooth
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -40,7 +41,20 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         values: dict[str, str] = {}
         queue: asyncio.Queue[bytes] = asyncio.Queue()
         try:
-            async with BleakClient(device, timeout=15.0) as client:
+            client = await establish_connection(
+                BleakClient,
+                device,
+                "ProSOFT 10",
+                max_attempts=3,
+                timeout=15.0,
+                ble_device_callback=lambda: (
+                    bluetooth.async_ble_device_from_address(
+                        self.hass, self.address, connectable=True
+                    )
+                    or device
+                ),
+            )
+            try:
                 await client.start_notify(
                     CHARACTERISTIC_UUID, notification_handler(queue)
                 )
@@ -49,7 +63,13 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
                         values[code] = await read_parameter(client, code, queue)
                     except (ProtocolError, BleakError, TimeoutError) as error:
                         _LOGGER.debug("Parameter %s unavailable: %s", code, error)
-                await client.stop_notify(CHARACTERISTIC_UUID)
+            finally:
+                await client.disconnect()
+        except BleakOutOfConnectionSlotsError as error:
+            raise UpdateFailed(
+                "Bluetooth adapter has no available connection to ProSOFT 10; "
+                "disconnect the phone app and check available Bluetooth slots"
+            ) from error
         except (BleakError, TimeoutError, OSError) as error:
             raise UpdateFailed(
                 f"Unable to communicate with {self.address}: {error}"

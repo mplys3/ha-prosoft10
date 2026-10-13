@@ -33,6 +33,7 @@ HACS checks the GitHub repository for later versions. Install updates from HACS 
 ## Troubleshooting
 
 - If setup says the device is out of range, make sure Home Assistant's Bluetooth adapter or proxy supports active connections and that the iPhone app is disconnected.
+- If setup reports no available Bluetooth connection slot while advertisements are still visible, disconnect both the Aqua Danmark app and nRF Connect, wait briefly, and try again. The integration retries transient connection failures, but it cannot take over a connection held by another client or create an extra adapter slot.
 - If manual setup is needed, use the Bluetooth address reported by Home Assistant's Bluetooth integration or a scanner near the Home Assistant host. iOS may show a different address because BLE devices can use private addresses.
 - If only some values are unknown, the device may not support the corresponding parameter. The salt percentage requires both `1006` and `1004`.
 - Enable debug logging for `custom_components.prosoft10` to see which parameter fails. Never share full debug logs without checking for identifiers.
