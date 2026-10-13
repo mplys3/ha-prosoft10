@@ -50,7 +50,10 @@ async def read_parameter(
     while not queue.empty():
         queue.get_nowait()
 
-    await client.write_gatt_char(CHARACTERISTIC_UUID, make_request(code), response=True)
+    async with asyncio.timeout(timeout):
+        await client.write_gatt_char(
+            CHARACTERISTIC_UUID, make_request(code), response=True
+        )
     fragments: list[bytes] = []
     loop = asyncio.get_running_loop()
     deadline = loop.time() + timeout

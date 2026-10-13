@@ -1,8 +1,8 @@
 # Aqua Danmark ProSOFT 10 for Home Assistant
 
-Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. Version 0.1.2 has been tested on one running Home Assistant installation with a Raspberry Pi Bluetooth adapter. Version 0.1.3 improves connection error reporting; it has not yet been tested against the device. Other devices and adapter setups may behave differently.
+Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. Version 0.1.2 was tested on one running Home Assistant installation with a Raspberry Pi Bluetooth adapter. Version 0.2.0 changes the connection lifecycle and has not yet been tested against the device. Other devices and adapter setups may behave differently.
 
-The integration reads the device over Bluetooth every five minutes. It does not change settings or start regeneration.
+The integration reads the device over Bluetooth every 20 seconds, matching the dashboard polling interval found in the vendor app. It keeps one BLE connection open between polls, reconnects if the device drops that connection, and disconnects when the integration is unloaded. It does not change settings or start regeneration.
 
 | Sensor | Source | Unit | Status |
 |---|---|---|---|
@@ -18,7 +18,7 @@ Unavailable readings appear as unknown. The total-water sensor is a cumulative m
 
 - Home Assistant with a **connectable** Bluetooth adapter or Bluetooth proxy in range of the water softener.
 - HACS installed in Home Assistant.
-- The phone app must be disconnected while Home Assistant connects; many BLE devices allow only one client at a time.
+- The phone app must be disconnected while Home Assistant is using the device; many BLE devices allow only one client at a time. Disable the integration temporarily in Home Assistant to use the phone app.
 
 ## Install through HACS
 

@@ -5,7 +5,7 @@ from datetime import timedelta
 DOMAIN = "prosoft10"
 NAME = "Aqua Danmark ProSOFT 10"
 CHARACTERISTIC_UUID = "0000abf1-0000-1000-8000-00805f9b34fb"
-POLL_INTERVAL = timedelta(minutes=5)
+POLL_INTERVAL = timedelta(seconds=20)
 
 WATER_REMAINING = "1161"
 SALT_REMAINING = "1006"
