@@ -1,6 +1,6 @@
 # Aqua Danmark ProSOFT 10 for Home Assistant
 
-Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. Version 0.1.2 was tested on one running Home Assistant installation with a Raspberry Pi Bluetooth adapter. Version 0.2.0 changes the connection lifecycle and has not yet been tested against the device. Other devices and adapter setups may behave differently.
+Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. The original five sensors were confirmed on a running Home Assistant installation; the new alarm and regeneration-time sensors in version 0.3.0 still need device testing. Other devices and adapter setups may behave differently.
 
 The integration reads the device over Bluetooth every 20 seconds, matching the dashboard polling interval found in the vendor app. It keeps one BLE connection open between polls, reconnects if the device drops that connection, and disconnects when the integration is unloaded. It does not change settings or start regeneration.
 
@@ -11,8 +11,14 @@ The integration reads the device over Bluetooth every 20 seconds, matching the d
 | Salt level | `1006 / 1004` | % | Confirmed in Home Assistant at 85%, matching the app |
 | Total treated water | `1169` | m³ | Confirmed in Home Assistant and app formatting |
 | Regeneration | `1174` | none / in progress / scheduled | Value `0` confirmed in Home Assistant; other mappings from app code |
+| Regeneration time 1–4 | `1017`–`1020` | local time | Four configured start times from app protocol; `99:99` means disabled; device values not yet verified |
+| Continuous water flow | NF-02 bit in BLE manufacturer data | alarm on / off | Decoded from Android app; live HA behavior not yet verified |
 
 Unavailable readings appear as unknown. The total-water sensor is a cumulative meter suitable for Home Assistant water statistics; its state may change only after the device increments a whole cubic metre.
+
+The four regeneration times are configured opportunities for regeneration, **not a promised date and time for the next run**. Capacity and operating rules may determine whether a regeneration is actually scheduled. Disabled time slots show as unknown.
+
+The continuous-flow binary sensor follows the device's NF-02 alarm bit in Bluetooth advertisements. It becomes unavailable if no valid advertisement has been received for five minutes, rather than continuing to show an old safe state. Some devices stop advertising while a BLE client is connected; if that happens with this device, the alarm will remain unavailable while the integration's persistent connection is open. Do not rely on this experimental entity as the sole leak alarm until its behavior is verified on your device.
 
 ## Requirements
 

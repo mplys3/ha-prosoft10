@@ -22,6 +22,7 @@ def _load_coordinator():
 
         def __init__(self, hass, _logger, **_kwargs):
             self.hass = hass
+            self.data = None
 
     modules = {
         "homeassistant": types.ModuleType("homeassistant"),
@@ -42,11 +43,14 @@ def _load_coordinator():
     modules["homeassistant.components"].bluetooth = modules[
         "homeassistant.components.bluetooth"
     ]
+    modules["homeassistant.components.bluetooth"].async_last_service_info = (
+        lambda *_args, **_kwargs: None
+    )
     modules["homeassistant.config_entries"].ConfigEntry = type("ConfigEntry", (), {})
     modules["homeassistant.core"].HomeAssistant = type("HomeAssistant", (), {})
-    modules["homeassistant.helpers.update_coordinator"].DataUpdateCoordinator = (
-        FakeDataUpdateCoordinator
-    )
+    modules[
+        "homeassistant.helpers.update_coordinator"
+    ].DataUpdateCoordinator = FakeDataUpdateCoordinator
     modules["homeassistant.helpers.update_coordinator"].UpdateFailed = type(
         "UpdateFailed", (Exception,), {}
     )
@@ -57,6 +61,17 @@ def _load_coordinator():
 
 
 class CoordinatorTests(unittest.TestCase):
+    def test_flow_alarm_expires_without_advertisements(self) -> None:
+        module = _load_coordinator()
+        entry = types.SimpleNamespace(data={"address": "AA:BB:CC:DD:EE:FF"})
+        coordinator = module.ProsoftCoordinator(object(), entry)
+        info = types.SimpleNamespace(manufacturer_data={65535: b"\x02\x00\x00"})
+        with patch.object(module, "monotonic", return_value=100):
+            coordinator._advertisement_received(info)
+            self.assertTrue(coordinator.flow_alarm)
+        with patch.object(module, "monotonic", return_value=401):
+            self.assertIsNone(coordinator.flow_alarm)
+
     def test_reuses_connection_and_disconnects_on_close(self) -> None:
         async def run() -> None:
             module = _load_coordinator()

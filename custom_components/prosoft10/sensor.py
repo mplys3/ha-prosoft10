@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import time
 from decimal import Decimal, InvalidOperation
 from typing import ClassVar
 
@@ -21,12 +22,14 @@ from .const import (
     DOMAIN,
     NAME,
     REGENERATION_STATE,
+    REGENERATION_TIMES,
     SALT_CAPACITY,
     SALT_REMAINING,
     TOTAL_TREATED_WATER,
     WATER_REMAINING,
 )
 from .coordinator import ProsoftCoordinator
+from .protocol import parse_regeneration_time
 
 
 def _number(value: str | None) -> int | float | None:
@@ -55,6 +58,10 @@ async def async_setup_entry(
             ProsoftSaltPercent(coordinator),
             ProsoftTotalWater(coordinator),
             ProsoftRegeneration(coordinator),
+            *(
+                ProsoftRegenerationTime(coordinator, index, code)
+                for index, code in enumerate(REGENERATION_TIMES, 1)
+            ),
         ]
     )
 
@@ -165,3 +172,19 @@ class ProsoftRegeneration(ProsoftSensor):
         return {"0": "none", "1": "in_progress", "2": "scheduled"}.get(
             raw.strip(), "unknown"
         )
+
+
+class ProsoftRegenerationTime(ProsoftSensor):
+    """One configured regeneration time, not a predicted next run."""
+
+    _attr_device_class = SensorDeviceClass.TIME
+    _attr_icon = "mdi:clock-outline"
+
+    def __init__(self, coordinator: ProsoftCoordinator, index: int, code: str) -> None:
+        super().__init__(coordinator, f"regeneration_time_{index}")
+        self._attr_translation_key = f"regeneration_time_{index}"
+        self._code = code
+
+    @property
+    def native_value(self) -> time | None:
+        return parse_regeneration_time(self.coordinator.data.get(self._code))

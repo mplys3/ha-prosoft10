@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from datetime import time
 
 from bleak import BleakClient
 
@@ -23,6 +24,17 @@ def make_request(code: str) -> bytes:
     if len(code) != 4 or not code.isascii() or not code.isdecimal():
         raise ValueError("Parameter code must be four ASCII decimal digits")
     return f"@{code}\r\n".encode("ascii")
+
+
+def parse_regeneration_time(value: str | None) -> time | None:
+    """Decode an HH:MM time; the device uses 99:99 for a disabled slot."""
+    if value is None:
+        return None
+    try:
+        hour, minute = (int(part) for part in value.strip().split(":"))
+        return time(hour, minute)
+    except (ValueError, TypeError):
+        return None
 
 
 def parse_reply(code: str, data: bytes) -> str:

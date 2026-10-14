@@ -13,15 +13,29 @@ package.__path__ = [
 ]
 sys.modules.setdefault("custom_components.prosoft10", package)
 
+from custom_components.prosoft10.beacon import continuous_flow_alarm
 from custom_components.prosoft10.protocol import (
     ProtocolError,
     make_request,
+    parse_regeneration_time,
     parse_reply,
     read_parameter,
 )
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_regeneration_time_and_disabled_slot(self) -> None:
+        self.assertEqual(str(parse_regeneration_time("02:30")), "02:30:00")
+        self.assertIsNone(parse_regeneration_time("99:99"))
+        self.assertIsNone(parse_regeneration_time("25:00"))
+
+    def test_continuous_flow_flag(self) -> None:
+        self.assertIsNone(continuous_flow_alarm({}))
+        self.assertIsNone(continuous_flow_alarm({65535: b"\x02\x00"}))
+        self.assertFalse(continuous_flow_alarm({65535: b"\x00\x00\x00"}))
+        self.assertTrue(continuous_flow_alarm({65535: b"\x02\x00\x00"}))
+        self.assertTrue(continuous_flow_alarm({65535: b"\x03\x00\x00"}))
+
     def test_captured_frames(self) -> None:
         self.assertEqual(make_request("1169"), bytes.fromhex("40313136390d0a"))
         self.assertEqual(

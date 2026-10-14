@@ -13,7 +13,14 @@
       "salt_remaining": {"name": "Salt remaining"},
       "salt_level": {"name": "Salt level"},
       "total_treated_water": {"name": "Total treated water"},
-      "regeneration": {"name": "Regeneration", "state": {"none": "None", "in_progress": "In progress", "scheduled": "Scheduled", "unknown": "Unknown"}}
+      "regeneration": {"name": "Regeneration", "state": {"none": "None", "in_progress": "In progress", "scheduled": "Scheduled", "unknown": "Unknown"}},
+      "regeneration_time_1": {"name": "Regeneration time 1"},
+      "regeneration_time_2": {"name": "Regeneration time 2"},
+      "regeneration_time_3": {"name": "Regeneration time 3"},
+      "regeneration_time_4": {"name": "Regeneration time 4"}
+    },
+    "binary_sensor": {
+      "continuous_flow": {"name": "Continuous water flow"}
     }
   }
 }
