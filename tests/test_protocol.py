@@ -38,6 +38,7 @@ class ProtocolTests(unittest.TestCase):
 
     def test_captured_frames(self) -> None:
         self.assertEqual(make_request("1005"), bytes.fromhex("40313030350d0a"))
+        self.assertEqual(make_request("1146"), bytes.fromhex("40313134360d0a"))
         self.assertEqual(make_request("1169"), bytes.fromhex("40313136390d0a"))
         self.assertEqual(
             parse_reply("1169", bytes.fromhex("40313136393030303533")), "00053"

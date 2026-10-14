@@ -37,6 +37,16 @@ The continuous-flow binary sensor follows the device's NF-02 alarm bit in Blueto
 
 HACS checks the GitHub repository for later versions. Install updates from HACS and restart Home Assistant when prompted.
 
+## Read a parameter on demand
+
+In Home Assistant, open **Developer Tools → Actions**, select **Aqua Danmark ProSOFT 10: Read parameter** (`prosoft10.read_parameter`), and enter:
+
+```yaml
+code: "1146"
+```
+
+Run the action to see the raw value in its response. If you have configured multiple ProSOFT 10 devices, include their `address` as well. This uses the same existing Bluetooth connection as the sensors, so a poll and a manual read cannot collide. The value is not saved as a sensor. Parameter `1146` is labelled as an advanced-settings code in the app; its returned value may be sensitive, so check it before sharing an action response or automation trace. The action sends only a read request and cannot change a setting.
+
 ## Troubleshooting
 
 - If setup says the device is out of range, make sure Home Assistant's Bluetooth adapter or proxy supports active connections and that the iPhone app is disconnected.

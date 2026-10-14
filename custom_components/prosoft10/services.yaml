@@ -1,0 +1,17 @@
+read_parameter:
+  name: Read parameter
+  description: Read a four-digit parameter from ProSOFT 10 and return its raw value. The response is not saved as an entity.
+  fields:
+    code:
+      name: Parameter code
+      description: Four-digit code, for example 1146.
+      required: true
+      example: "1146"
+      selector:
+        text:
+    address:
+      name: Bluetooth address
+      description: Required only when more than one ProSOFT 10 device is configured.
+      example: "AA:BB:CC:DD:EE:FF"
+      selector:
+        text:

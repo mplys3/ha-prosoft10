@@ -163,6 +163,16 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         async with self._connection_lock:
             await self._async_disconnect()
 
+    async def async_read_parameter(self, code: str) -> str:
+        """Read a parameter using the polling connection without storing its value."""
+        async with self._connection_lock:
+            try:
+                client = await self._async_connect()
+                return await read_parameter(client, code, self._queue)
+            except (BleakError, TimeoutError, OSError):
+                await self._async_disconnect()
+                raise
+
     async def _async_update_data(self) -> dict[str, str]:
         async with self._connection_lock:
             values: dict[str, str] = {
