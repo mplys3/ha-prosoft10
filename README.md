@@ -9,6 +9,7 @@ The integration reads the device over Bluetooth every 20 seconds, matching the d
 | Remaining treated water | `1161` | L | Confirmed in Home Assistant |
 | Salt remaining | `1006` | kg | Confirmed in Home Assistant; unit inferred from app display |
 | Salt level | `1006 / 1004` | % | Confirmed in Home Assistant at 85%, matching the app |
+| Salt per regeneration | `1005` | kg | Added in v0.3.1; raw device value still needs confirmation |
 | Total treated water | `1169` | m³ | Confirmed in Home Assistant and app formatting |
 | Regeneration | `1174` | none / in progress / scheduled | Value `0` confirmed in Home Assistant; other mappings from app code |
 | Regeneration time 1–4 | `1017`–`1020` | local time | Four configured start times from app protocol; `99:99` means disabled; device values not yet verified |
@@ -16,7 +17,7 @@ The integration reads the device over Bluetooth every 20 seconds, matching the d
 
 Unavailable readings appear as unknown. The total-water sensor is a cumulative meter suitable for Home Assistant water statistics; its state may change only after the device increments a whole cubic metre.
 
-The four regeneration times are configured opportunities for regeneration, **not a promised date and time for the next run**. Capacity and operating rules may determine whether a regeneration is actually scheduled. Disabled time slots show as unknown.
+The four regeneration times are configured opportunities for regeneration, **not a promised date and time for the next run**. Capacity and operating rules may determine whether a regeneration is actually scheduled. Disabled time slots show as unknown. Salt per regeneration is read together with these settings at startup and approximately every five minutes. Its `raw_value` attribute retains the response body for checking the interpretation against the app.
 
 The continuous-flow binary sensor follows the device's NF-02 alarm bit in Bluetooth advertisements. It becomes unavailable if no valid advertisement has been received for five minutes, rather than continuing to show an old safe state. Some devices stop advertising while a BLE client is connected; if that happens with this device, the alarm will remain unavailable while the integration's persistent connection is open. Do not rely on this experimental entity as the sole leak alarm until its behavior is verified on your device.
 

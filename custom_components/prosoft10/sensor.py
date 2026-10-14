@@ -24,6 +24,7 @@ from .const import (
     REGENERATION_STATE,
     REGENERATION_TIMES,
     SALT_CAPACITY,
+    SALT_PER_REGENERATION,
     SALT_REMAINING,
     TOTAL_TREATED_WATER,
     WATER_REMAINING,
@@ -56,6 +57,7 @@ async def async_setup_entry(
             ProsoftWaterRemaining(coordinator),
             ProsoftSaltRemaining(coordinator),
             ProsoftSaltPercent(coordinator),
+            ProsoftSaltPerRegeneration(coordinator),
             ProsoftTotalWater(coordinator),
             ProsoftRegeneration(coordinator),
             *(
@@ -134,6 +136,26 @@ class ProsoftSaltPercent(ProsoftSensor):
         if remaining is None or capacity is None or capacity <= 0:
             return None
         return round(remaining / capacity * 100)
+
+
+class ProsoftSaltPerRegeneration(ProsoftSensor):
+    """Configured salt consumption for one regeneration."""
+
+    _attr_translation_key = "salt_per_regeneration"
+    _attr_native_unit_of_measurement = UnitOfMass.KILOGRAMS
+    _attr_device_class = SensorDeviceClass.WEIGHT
+    _attr_icon = "mdi:shaker-outline"
+
+    def __init__(self, coordinator: ProsoftCoordinator) -> None:
+        super().__init__(coordinator, "salt_per_regeneration")
+
+    @property
+    def native_value(self) -> int | float | None:
+        return _number(self.coordinator.data.get(SALT_PER_REGENERATION))
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | None]:
+        return {"raw_value": self.coordinator.data.get(SALT_PER_REGENERATION)}
 
 
 class ProsoftTotalWater(ProsoftSensor):

@@ -103,7 +103,10 @@ class CoordinatorTests(unittest.TestCase):
                 clients.append(client)
                 return client
 
+            requested = []
+
             async def read(_client, code, _queue):
+                requested.append(code)
                 return code
 
             module.establish_connection = connect
@@ -112,7 +115,10 @@ class CoordinatorTests(unittest.TestCase):
             coordinator = module.ProsoftCoordinator(object(), entry)
 
             await coordinator._async_update_data()
+            self.assertIn("1005", requested)
+            requested.clear()
             await coordinator._async_update_data()
+            self.assertNotIn("1005", requested)
             self.assertEqual(len(clients), 1)
             self.assertEqual(clients[0].notify_starts, 1)
             self.assertEqual(clients[0].disconnects, 0)

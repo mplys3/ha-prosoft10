@@ -37,6 +37,7 @@ class ProtocolTests(unittest.TestCase):
         self.assertTrue(continuous_flow_alarm({65535: b"\x03\x00\x00"}))
 
     def test_captured_frames(self) -> None:
+        self.assertEqual(make_request("1005"), bytes.fromhex("40313030350d0a"))
         self.assertEqual(make_request("1169"), bytes.fromhex("40313136390d0a"))
         self.assertEqual(
             parse_reply("1169", bytes.fromhex("40313136393030303533")), "00053"

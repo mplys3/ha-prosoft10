@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .beacon import continuous_flow_alarm
-from .const import CHARACTERISTIC_UUID, POLL_INTERVAL, READ_CODES, REGENERATION_TIMES
+from .const import CHARACTERISTIC_UUID, CONFIG_CODES, POLL_INTERVAL, READ_CODES
 from .protocol import ProtocolError, notification_handler, read_parameter
 
 _LOGGER = logging.getLogger(__name__)
@@ -167,14 +167,14 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         async with self._connection_lock:
             values: dict[str, str] = {
                 code: self.data[code]
-                for code in REGENERATION_TIMES
+                for code in CONFIG_CODES
                 if self.data is not None and code in self.data
             }
             live_response = False
             try:
                 client = await self._async_connect()
                 codes = READ_CODES + (
-                    REGENERATION_TIMES if self._poll_count % 15 == 0 else ()
+                    CONFIG_CODES if self._poll_count % 15 == 0 else ()
                 )
                 for code in codes:
                     try:
