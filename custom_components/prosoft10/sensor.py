@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import time
 from decimal import Decimal, InvalidOperation
 from typing import ClassVar
 
@@ -199,7 +198,6 @@ class ProsoftRegeneration(ProsoftSensor):
 class ProsoftRegenerationTime(ProsoftSensor):
     """One configured regeneration time, not a predicted next run."""
 
-    _attr_device_class = SensorDeviceClass.TIME
     _attr_icon = "mdi:clock-outline"
 
     def __init__(self, coordinator: ProsoftCoordinator, index: int, code: str) -> None:
@@ -208,5 +206,6 @@ class ProsoftRegenerationTime(ProsoftSensor):
         self._code = code
 
     @property
-    def native_value(self) -> time | None:
-        return parse_regeneration_time(self.coordinator.data.get(self._code))
+    def native_value(self) -> str | None:
+        value = parse_regeneration_time(self.coordinator.data.get(self._code))
+        return value.strftime("%H:%M") if value is not None else None
