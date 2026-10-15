@@ -76,7 +76,7 @@ class SensorImportTests(unittest.TestCase):
             coordinator.data["1005"] = "1.25"
             salt = module.ProsoftSaltPerRegeneration(coordinator)
             self.assertEqual(salt.native_value, 1.25)
-            self.assertFalse(hasattr(salt, "_attr_native_unit_of_measurement"))
+            self.assertEqual(salt._attr_native_unit_of_measurement, "kg")
 
 
 if __name__ == "__main__":

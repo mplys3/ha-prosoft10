@@ -12,7 +12,7 @@
       "water_remaining": {"name": "Resterende behandlingskapacitet"},
       "salt_remaining": {"name": "Resterende salt"},
       "salt_level": {"name": "Saltniveau"},
-      "salt_per_regeneration": {"name": "Salt per regenerering (råværdi)"},
+      "salt_per_regeneration": {"name": "Salt per regenerering"},
       "total_treated_water": {"name": "Samlet behandlet vand"},
       "regeneration": {"name": "Regenerering", "state": {"none": "Ingen", "in_progress": "I gang", "scheduled": "Planlagt", "unknown": "Ukendt"}},
       "regeneration_time_1": {"name": "Regenereringstid 1"},
