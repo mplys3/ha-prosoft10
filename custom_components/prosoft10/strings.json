@@ -12,7 +12,7 @@
       "water_remaining": {"name": "Remaining treated water"},
       "salt_remaining": {"name": "Salt remaining"},
       "salt_level": {"name": "Salt level"},
-      "salt_per_regeneration": {"name": "Salt per regeneration"},
+      "salt_per_regeneration": {"name": "Salt per regeneration (raw value)"},
       "total_treated_water": {"name": "Total treated water"},
       "regeneration": {"name": "Regeneration", "state": {"none": "None", "in_progress": "In progress", "scheduled": "Scheduled", "unknown": "Unknown"}},
       "regeneration_time_1": {"name": "Regeneration time 1"},

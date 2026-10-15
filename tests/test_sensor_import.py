@@ -73,6 +73,10 @@ class SensorImportTests(unittest.TestCase):
             self.assertIsNone(
                 module.ProsoftRegenerationTime(coordinator, 2, "1018").native_value
             )
+            coordinator.data["1005"] = "1.25"
+            salt = module.ProsoftSaltPerRegeneration(coordinator)
+            self.assertEqual(salt.native_value, 1.25)
+            self.assertFalse(hasattr(salt, "_attr_native_unit_of_measurement"))
 
 
 if __name__ == "__main__":

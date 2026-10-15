@@ -138,11 +138,9 @@ class ProsoftSaltPercent(ProsoftSensor):
 
 
 class ProsoftSaltPerRegeneration(ProsoftSensor):
-    """Configured salt consumption for one regeneration."""
+    """Unscaled parameter 1005; its physical unit is not yet verified."""
 
     _attr_translation_key = "salt_per_regeneration"
-    _attr_native_unit_of_measurement = UnitOfMass.KILOGRAMS
-    _attr_device_class = SensorDeviceClass.WEIGHT
     _attr_icon = "mdi:shaker-outline"
 
     def __init__(self, coordinator: ProsoftCoordinator) -> None:
