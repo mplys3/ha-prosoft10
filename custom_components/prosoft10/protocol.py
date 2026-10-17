@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-from datetime import time
+from datetime import date, datetime, time
 
 from bleak import BleakClient
 
@@ -34,6 +34,16 @@ def parse_regeneration_time(value: str | None) -> time | None:
         hour, minute = (int(part) for part in value.strip().split(":"))
         return time(hour, minute)
     except (ValueError, TypeError):
+        return None
+
+
+def parse_regeneration_date(value: str | None) -> date | None:
+    """Decode the device's DD/MM/YYYY date without inventing a time or timezone."""
+    if value is None:
+        return None
+    try:
+        return datetime.strptime(value.strip(), "%d/%m/%Y").date()
+    except ValueError:
         return None
 
 

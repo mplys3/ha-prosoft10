@@ -9,6 +9,7 @@
   },
   "entity": {
     "sensor": {
+      "last_regeneration": {"name": "Seneste regenerering"},
       "water_remaining": {"name": "Resterende behandlingskapacitet"},
       "salt_remaining": {"name": "Resterende salt"},
       "salt_level": {"name": "Saltniveau"},

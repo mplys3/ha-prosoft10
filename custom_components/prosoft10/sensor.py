@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import ClassVar
 
@@ -19,6 +20,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
+    LAST_REGENERATION,
     NAME,
     REGENERATION_STATE,
     REGENERATION_TIMES,
@@ -29,7 +31,7 @@ from .const import (
     WATER_REMAINING,
 )
 from .coordinator import ProsoftCoordinator
-from .protocol import parse_regeneration_time
+from .protocol import parse_regeneration_date, parse_regeneration_time
 
 
 def _number(value: str | None) -> int | float | None:
@@ -59,6 +61,7 @@ async def async_setup_entry(
             ProsoftSaltPerRegeneration(coordinator),
             ProsoftTotalWater(coordinator),
             ProsoftRegeneration(coordinator),
+            ProsoftLastRegeneration(coordinator),
             *(
                 ProsoftRegenerationTime(coordinator, index, code)
                 for index, code in enumerate(REGENERATION_TIMES, 1)
@@ -209,3 +212,18 @@ class ProsoftRegenerationTime(ProsoftSensor):
     def native_value(self) -> str | None:
         value = parse_regeneration_time(self.coordinator.data.get(self._code))
         return value.strftime("%H:%M") if value is not None else None
+
+
+class ProsoftLastRegeneration(ProsoftSensor):
+    """Date of the latest regeneration reported by the device."""
+
+    _attr_translation_key = "last_regeneration"
+    _attr_device_class = SensorDeviceClass.DATE
+    _attr_icon = "mdi:calendar-refresh"
+
+    def __init__(self, coordinator: ProsoftCoordinator) -> None:
+        super().__init__(coordinator, "last_regeneration")
+
+    @property
+    def native_value(self) -> date | None:
+        return parse_regeneration_date(self.coordinator.data.get(LAST_REGENERATION))

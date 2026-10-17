@@ -4,6 +4,7 @@ import asyncio
 import sys
 import types
 import unittest
+from datetime import date
 from pathlib import Path
 
 # Load the protocol without importing Home Assistant from the integration setup.
@@ -17,6 +18,7 @@ from custom_components.prosoft10.beacon import continuous_flow_alarm
 from custom_components.prosoft10.protocol import (
     ProtocolError,
     make_request,
+    parse_regeneration_date,
     parse_regeneration_time,
     parse_reply,
     read_parameter,
@@ -28,6 +30,13 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(str(parse_regeneration_time("02:30")), "02:30:00")
         self.assertIsNone(parse_regeneration_time("99:99"))
         self.assertIsNone(parse_regeneration_time("25:00"))
+
+    def test_regeneration_date(self) -> None:
+        self.assertEqual(parse_regeneration_date("16/10/2026"), date(2026, 10, 16))
+        self.assertEqual(parse_regeneration_date(" 29/02/2024 "), date(2024, 2, 29))
+        for value in (None, "", "00/00/0000", "31/02/2026", "29/02/2025", "invalid data"):
+            with self.subTest(value=value):
+                self.assertIsNone(parse_regeneration_date(value))
 
     def test_continuous_flow_flag(self) -> None:
         self.assertIsNone(continuous_flow_alarm({}))

@@ -4,6 +4,7 @@ import importlib.util
 import sys
 import types
 import unittest
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,7 +16,7 @@ class SensorImportTests(unittest.TestCase):
         )
         sensor = types.ModuleType("homeassistant.components.sensor")
         sensor.SensorDeviceClass = types.SimpleNamespace(
-            WEIGHT="weight", WATER="water", ENUM="enum"
+            WEIGHT="weight", WATER="water", ENUM="enum", DATE="date"
         )
         sensor.SensorEntity = type("SensorEntity", (), {})
         sensor.SensorStateClass = types.SimpleNamespace(
@@ -73,6 +74,12 @@ class SensorImportTests(unittest.TestCase):
             self.assertIsNone(
                 module.ProsoftRegenerationTime(coordinator, 2, "1018").native_value
             )
+            coordinator.data["1168"] = "16/10/2026"
+            last = module.ProsoftLastRegeneration(coordinator)
+            self.assertEqual(last.native_value, date(2026, 10, 16))
+            self.assertEqual(last._attr_device_class, "date")
+            coordinator.data["1168"] = "invalid data"
+            self.assertIsNone(last.native_value)
             coordinator.data["1005"] = "1.25"
             salt = module.ProsoftSaltPerRegeneration(coordinator)
             self.assertEqual(salt.native_value, 1.25)

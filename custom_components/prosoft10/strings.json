@@ -9,6 +9,7 @@
   },
   "entity": {
     "sensor": {
+      "last_regeneration": {"name": "Last regeneration"},
       "water_remaining": {"name": "Remaining treated water"},
       "salt_remaining": {"name": "Salt remaining"},
       "salt_level": {"name": "Salt level"},

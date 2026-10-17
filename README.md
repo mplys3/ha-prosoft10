@@ -12,6 +12,7 @@ The integration reads the device over Bluetooth every 20 seconds, matching the d
 | Salt per regeneration | `1005` | kg | Unit confirmed by the device owner's vendor diagnostic report |
 | Total treated water | `1169` | m³ | Confirmed in Home Assistant and app formatting |
 | Regeneration | `1174` | none / in progress / scheduled | Value `0` confirmed in Home Assistant; other mappings from app code |
+| Last regeneration | `1168` | date | Confirmed on device: `16/10/2026`; read every 20 seconds |
 | Regeneration time 1–4 | `1017`–`1020` | local time | Four configured start times from app protocol; `99:99` means disabled; device values not yet verified |
 | Continuous water flow | NF-02 bit in BLE manufacturer data | alarm on / off | Decoded from Android app; live HA behavior not yet verified |
 
