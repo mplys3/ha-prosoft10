@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from time import monotonic
 
 from bleak import BleakClient
@@ -35,6 +37,8 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         self._client: BleakClient | None = None
         self._queue: asyncio.Queue[bytes] = asyncio.Queue()
         self._connection_lock = asyncio.Lock()
+        self._closing = False
+        self._operation_task: asyncio.Task | None = None
         self._cancel_advertisements = None
         self._flow_alarm: bool | None = None
         self._last_advertisement: float | None = None
@@ -106,7 +110,10 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
             self.hass, self.address, connectable=True
         )
         if device is None:
-            raise UpdateFailed(f"Bluetooth device {self.address} is out of range")
+            raise UpdateFailed(
+                f"Bluetooth device {self.address} is not currently available "
+                "from a connectable Home Assistant scanner"
+            )
 
         self._queue = asyncio.Queue()
         client = await establish_connection(
@@ -143,29 +150,48 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
             return
         if self._client is client:
             self._client = None
-        if client.is_connected:
-            try:
-                async with asyncio.timeout(10):
-                    await client.stop_notify(CHARACTERISTIC_UUID)
-            except (BleakError, TimeoutError, OSError) as error:
-                _LOGGER.debug("Could not stop ProSOFT 10 notifications: %s", error)
+        # Disconnect also removes notifications. Do not delay link release with
+        # a separate stop_notify request that may hang on an unresponsive device.
         try:
             async with asyncio.timeout(10):
                 await client.disconnect()
+            _LOGGER.debug("ProSOFT 10 Bluetooth connection closed")
         except (BleakError, TimeoutError, OSError) as error:
             _LOGGER.warning("Could not disconnect ProSOFT 10 cleanly: %s", error)
 
     async def async_close(self) -> None:
-        """Close the connection when Home Assistant unloads the entry."""
+        """Stop pending I/O and release BLE on unload or Home Assistant shutdown."""
+        self._closing = True
+        _LOGGER.debug("Closing ProSOFT 10 Bluetooth session")
         if self._cancel_advertisements is not None:
             self._cancel_advertisements()
             self._cancel_advertisements = None
+        task = self._operation_task
+        if task is not None and task is not asyncio.current_task() and not task.done():
+            if not task.cancelling():
+                task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
         async with self._connection_lock:
             await self._async_disconnect()
 
+    @asynccontextmanager
+    async def _async_operation(self) -> AsyncIterator[None]:
+        """Serialize BLE I/O and prevent reconnecting after shutdown starts."""
+        async with self._connection_lock:
+            if self._closing:
+                raise UpdateFailed("ProSOFT 10 is shutting down")
+            self._operation_task = asyncio.current_task()
+            try:
+                yield
+            except asyncio.CancelledError:
+                await self._async_disconnect()
+                raise
+            finally:
+                self._operation_task = None
+
     async def async_read_parameter(self, code: str) -> str:
         """Read a parameter using the polling connection without storing its value."""
-        async with self._connection_lock:
+        async with self._async_operation():
             try:
                 client = await self._async_connect()
                 return await read_parameter(client, code, self._queue)
@@ -174,7 +200,7 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
                 raise
 
     async def _async_update_data(self) -> dict[str, str]:
-        async with self._connection_lock:
+        async with self._async_operation():
             values: dict[str, str] = {
                 code: self.data[code]
                 for code in CONFIG_CODES

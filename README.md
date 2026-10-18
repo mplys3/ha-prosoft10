@@ -2,7 +2,7 @@
 
 Unofficial, read-only Bluetooth integration for the Aqua Danmark ProSOFT 10 water softener. It is based on the app protocol and real replies from one ProSOFT 10 device. The original five sensors were confirmed on a running Home Assistant installation; the new alarm and regeneration-time sensors in version 0.3.0 still need device testing. Other devices and adapter setups may behave differently.
 
-The integration reads the device over Bluetooth every 20 seconds, matching the dashboard polling interval found in the vendor app. It keeps one BLE connection open between polls, reconnects if the device drops that connection, and disconnects when the integration is unloaded. It does not change settings or start regeneration.
+The integration reads the device over Bluetooth every 20 seconds, matching the dashboard polling interval found in the vendor app. It keeps one BLE connection open between polls, reconnects if the device drops that connection, and disconnects when the integration is unloaded or Home Assistant shuts down. Pending reads are cancelled during shutdown so they cannot reopen the connection. It does not change settings or start regeneration.
 
 | Sensor | Source | Unit | Status |
 |---|---|---|---|

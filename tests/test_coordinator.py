@@ -6,7 +6,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 
 def _load_coordinator():
@@ -61,6 +61,46 @@ def _load_coordinator():
 
 
 class CoordinatorTests(unittest.TestCase):
+    def test_shutdown_cancels_reads_and_prevents_reconnection(self) -> None:
+        async def run() -> None:
+            for manual in (False, True):
+                with self.subTest(manual=manual):
+                    module = _load_coordinator()
+                    entry = types.SimpleNamespace(data={"address": "AA:BB:CC:DD:EE:FF"})
+                    coordinator = module.ProsoftCoordinator(object(), entry)
+                    client = types.SimpleNamespace(
+                        is_connected=True, disconnect=AsyncMock()
+                    )
+                    coordinator._client = client
+                    unsubscribe = Mock()
+                    coordinator._cancel_advertisements = unsubscribe
+                    started = asyncio.Event()
+
+                    async def stalled_read(*_args, started=started):
+                        started.set()
+                        await asyncio.Event().wait()
+
+                    module.read_parameter = stalled_read
+                    operation = (
+                        coordinator.async_read_parameter("1168") if manual
+                        else coordinator._async_update_data()
+                    )
+                    task = asyncio.create_task(operation)
+                    await started.wait()
+                    await asyncio.wait_for(coordinator.async_close(), timeout=1)
+                    self.assertTrue(task.cancelled())
+                    client.disconnect.assert_awaited_once()
+                    unsubscribe.assert_called_once()
+                    self.assertIsNone(coordinator._client)
+                    await coordinator.async_close()
+                    client.disconnect.assert_awaited_once()
+                    with self.assertRaises(module.UpdateFailed):
+                        await coordinator._async_update_data()
+                    with self.assertRaises(module.UpdateFailed):
+                        await coordinator.async_read_parameter("1168")
+
+        asyncio.run(run())
+
     def test_flow_alarm_expires_without_advertisements(self) -> None:
         module = _load_coordinator()
         entry = types.SimpleNamespace(data={"address": "AA:BB:CC:DD:EE:FF"})

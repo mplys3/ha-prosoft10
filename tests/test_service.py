@@ -6,7 +6,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import voluptuous as vol
 
@@ -20,6 +20,7 @@ class ReadParameterServiceTests(unittest.TestCase):
         config_entries = types.ModuleType("homeassistant.config_entries")
         config_entries.ConfigEntry = type("ConfigEntry", (), {})
         const = types.ModuleType("homeassistant.const")
+        const.EVENT_HOMEASSISTANT_STOP = "homeassistant_stop"
         const.Platform = types.SimpleNamespace(
             SENSOR="sensor", BINARY_SENSOR="binary_sensor"
         )
@@ -79,6 +80,42 @@ class ReadParameterServiceTests(unittest.TestCase):
                 {"code": "1146", "value": "4321"},
             )
             reader.assert_awaited_once_with("1146")
+
+            async def check_lifecycle():
+                coordinator = types.SimpleNamespace(
+                    start_advertisements=Mock(),
+                    async_config_entry_first_refresh=AsyncMock(),
+                    async_close=AsyncMock(),
+                )
+                module.ProsoftCoordinator = Mock(return_value=coordinator)
+                unsubscribe = Mock()
+                hass.bus = types.SimpleNamespace(
+                    async_listen_once=Mock(return_value=unsubscribe)
+                )
+                hass.config_entries = types.SimpleNamespace(
+                    async_forward_entry_setups=AsyncMock()
+                )
+                entry = types.SimpleNamespace(entry_id="new", async_on_unload=Mock())
+                await module.async_setup_entry(hass, entry)
+                event, handler = hass.bus.async_listen_once.call_args.args
+                self.assertEqual(event, "homeassistant_stop")
+                entry.async_on_unload.assert_called_once_with(unsubscribe)
+                await handler(None)
+                coordinator.async_close.assert_awaited_once()
+
+                # Cancellation during the first refresh must close BLE and
+                # remove the shutdown listener, even before sensors exist.
+                coordinator.async_close.reset_mock()
+                coordinator.async_config_entry_first_refresh.side_effect = (
+                    asyncio.CancelledError()
+                )
+                with self.assertRaises(asyncio.CancelledError):
+                    await module.async_setup_entry(hass, entry)
+                coordinator.async_close.assert_awaited_once()
+                unsubscribe.assert_called_once()
+
+            asyncio.run(check_lifecycle())
+
 
 
 if __name__ == "__main__":

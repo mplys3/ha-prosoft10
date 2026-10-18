@@ -1,8 +1,10 @@
 """Aqua Danmark ProSOFT 10 integration."""
 
+import asyncio
+
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
 from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
@@ -61,10 +63,17 @@ async def async_setup(hass: HomeAssistant, _config: dict) -> bool:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the BLE device and its sensors."""
     coordinator = ProsoftCoordinator(hass, entry)
+
+    async def async_stop(_event) -> None:
+        await coordinator.async_close()
+
+    cancel_stop = hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop)
+    entry.async_on_unload(cancel_stop)
     try:
         coordinator.start_advertisements()
         await coordinator.async_config_entry_first_refresh()
-    except Exception:
+    except (Exception, asyncio.CancelledError):
+        cancel_stop()
         await coordinator.async_close()
         raise
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
