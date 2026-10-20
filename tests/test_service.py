@@ -25,6 +25,7 @@ class ReadParameterServiceTests(unittest.TestCase):
             SENSOR="sensor", BINARY_SENSOR="binary_sensor"
         )
         core = types.ModuleType("homeassistant.core")
+        core.callback = lambda func: func
         core.HomeAssistant = type("HomeAssistant", (), {})
         core.ServiceCall = type("ServiceCall", (), {})
         core.SupportsResponse = types.SimpleNamespace(ONLY="only")
@@ -82,37 +83,57 @@ class ReadParameterServiceTests(unittest.TestCase):
             reader.assert_awaited_once_with("1146")
 
             async def check_lifecycle():
-                coordinator = types.SimpleNamespace(
-                    start_advertisements=Mock(),
-                    async_config_entry_first_refresh=AsyncMock(),
-                    async_close=AsyncMock(),
-                )
-                module.ProsoftCoordinator = Mock(return_value=coordinator)
-                unsubscribe = Mock()
-                hass.bus = types.SimpleNamespace(
-                    async_listen_once=Mock(return_value=unsubscribe)
-                )
-                hass.config_entries = types.SimpleNamespace(
-                    async_forward_entry_setups=AsyncMock()
-                )
-                entry = types.SimpleNamespace(entry_id="new", async_on_unload=Mock())
-                await module.async_setup_entry(hass, entry)
-                event, handler = hass.bus.async_listen_once.call_args.args
-                self.assertEqual(event, "homeassistant_stop")
-                entry.async_on_unload.assert_called_once_with(unsubscribe)
-                await handler(None)
-                coordinator.async_close.assert_awaited_once()
+                for scenario in ("stop", "unload", "failed", "cancelled"):
+                    with self.subTest(scenario=scenario):
+                        listeners = []
+                        unload_callbacks = []
+                        removals = []
 
-                # Cancellation during the first refresh must close BLE and
-                # remove the shutdown listener, even before sensors exist.
-                coordinator.async_close.reset_mock()
-                coordinator.async_config_entry_first_refresh.side_effect = (
-                    asyncio.CancelledError()
-                )
-                with self.assertRaises(asyncio.CancelledError):
-                    await module.async_setup_entry(hass, entry)
-                coordinator.async_close.assert_awaited_once()
-                unsubscribe.assert_called_once()
+                        def listen(event, handler, listeners=listeners, removals=removals):
+                            self.assertEqual(event, "homeassistant_stop")
+                            listeners.append(handler)
+
+                            def unsubscribe():
+                                # Model HA: removing an unknown listener fails.
+                                listeners.remove(handler)
+                                removals.append(handler)
+
+                            return unsubscribe
+
+                        coordinator = types.SimpleNamespace(
+                            start_advertisements=Mock(),
+                            async_config_entry_first_refresh=AsyncMock(),
+                            async_close=AsyncMock(),
+                        )
+                        module.ProsoftCoordinator = Mock(return_value=coordinator)
+                        hass.bus = types.SimpleNamespace(async_listen=listen)
+                        hass.config_entries = types.SimpleNamespace(
+                            async_forward_entry_setups=AsyncMock(),
+                            async_unload_platforms=AsyncMock(return_value=True),
+                        )
+                        entry = types.SimpleNamespace(
+                            entry_id="new", async_on_unload=unload_callbacks.append
+                        )
+                        if scenario in ("failed", "cancelled"):
+                            error = (
+                                RuntimeError("first refresh failed")
+                                if scenario == "failed" else asyncio.CancelledError()
+                            )
+                            coordinator.async_config_entry_first_refresh.side_effect = error
+                            with self.assertRaises(type(error)):
+                                await module.async_setup_entry(hass, entry)
+                            coordinator.async_close.assert_awaited_once()
+                        else:
+                            await module.async_setup_entry(hass, entry)
+                            if scenario == "stop":
+                                await listeners[0](None)
+                                coordinator.async_close.assert_awaited_once()
+                            self.assertTrue(await module.async_unload_entry(hass, entry))
+                        for cleanup in unload_callbacks:
+                            cleanup()
+                            cleanup()
+                        self.assertEqual(listeners, [])
+                        self.assertEqual(len(removals), 1)
 
             asyncio.run(check_lifecycle())
 

@@ -5,7 +5,7 @@ import asyncio
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EVENT_HOMEASSISTANT_STOP, Platform
-from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
+from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse, callback
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 
 from .const import DOMAIN
@@ -64,10 +64,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the BLE device and its sensors."""
     coordinator = ProsoftCoordinator(hass, entry)
 
+    # Setup failure and entry unload can both invoke cleanup. Own the
+    # subscription here so the event bus is never asked to remove it twice.
+    unsubscribe_stop = None
+
+    @callback
+    def cancel_stop() -> None:
+        nonlocal unsubscribe_stop
+        if unsubscribe_stop is not None:
+            unsubscribe = unsubscribe_stop
+            unsubscribe_stop = None
+            unsubscribe()
+
     async def async_stop(_event) -> None:
+        cancel_stop()
         await coordinator.async_close()
 
-    cancel_stop = hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, async_stop)
+    unsubscribe_stop = hass.bus.async_listen(EVENT_HOMEASSISTANT_STOP, async_stop)
     entry.async_on_unload(cancel_stop)
     try:
         coordinator.start_advertisements()
