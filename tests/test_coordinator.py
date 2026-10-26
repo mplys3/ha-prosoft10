@@ -71,9 +71,10 @@ class CoordinatorTests(unittest.TestCase):
             coordinator.async_update_listeners = Mock()
             started = asyncio.Event()
             release = asyncio.Event()
-            async def stream(*_args):
+            async def stream(*_args, **_kwargs):
                 started.set()
                 await release.wait()
+                _kwargs["completion_info"].update(completion="idle", completeness_confirmed=False)
                 return "Hardhed 11 dH"
             with patch.object(module, "read_log", side_effect=stream), patch.object(
                 module, "read_parameter", new_callable=AsyncMock, return_value="11"
@@ -86,6 +87,8 @@ class CoordinatorTests(unittest.TestCase):
                 release.set()
                 self.assertEqual(await log_task, "Hardhed 11 dH")
                 self.assertEqual(await normal_task, "11")
+            self.assertEqual(coordinator.log_diagnostics["706"]["status"], "received")
+            self.assertFalse(coordinator.log_diagnostics["706"]["completeness_confirmed"])
             saved = coordinator.logs["706"]
             self.assertIsNotNone(saved[0].tzinfo)
             self.assertEqual(coordinator.async_update_listeners.call_count, 2)

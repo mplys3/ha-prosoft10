@@ -28,6 +28,44 @@ from custom_components.prosoft10.protocol import (
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_semicolon_log_is_returned_after_idle(self) -> None:
+        async def run():
+            # Verbatim records from the user's captured 707 transfer.
+            raw = ("2026.10.26-09:31: Slut pa regenerering.486 mA;"
+                   "2026.10.16-03:42: Slut pa regenerering.386 mA;")
+            queue = asyncio.Queue()
+            class Client:
+                async def write_gatt_char(self, *_args, **_kwargs):
+                    for start in range(0, len(raw), 17):
+                        queue.put_nowait(raw[start:start + 17].encode("latin-1"))
+            info = {}
+            value = await read_log(Client(), "707", queue, timeout=0.001, completion_info=info)
+            self.assertEqual(value, raw)
+            self.assertEqual(info["completion"], "idle")
+            self.assertFalse(info["completeness_confirmed"])
+            self.assertEqual(info["record_count"], 2)
+            self.assertEqual(info["received_bytes"], len(raw))
+        asyncio.run(run())
+
+    def test_idle_does_not_accept_cutoff_or_invalid_records(self) -> None:
+        async def run():
+            for raw in (b"2026.10.26-09:31: Hardhed 11 dH", b"invalid data;",
+                        b"2026.10.26-09:31: Hardhed 11 dH;cutoff"):
+                queue = asyncio.Queue()
+                class Client:
+                    async def write_gatt_char(self, *_args, raw=raw, queue=queue, **_kwargs):
+                        queue.put_nowait(raw)
+                with self.assertRaises(LogReadError):
+                    await read_log(Client(), "706", queue, timeout=0.001)
+            queue = asyncio.Queue()
+            class Client:
+                async def write_gatt_char(self, *_args, **_kwargs):
+                    queue.put_nowait(b"2026.10.26-09:31: Hardhed 11 dH;")
+            # The total deadline must never be mistaken for the idle deadline.
+            with self.assertRaises(LogReadError):
+                await read_log(Client(), "706", queue, timeout=1, total_timeout=0.001)
+        asyncio.run(run())
+
     def test_log_codes_and_validation(self) -> None:
         for code in ("706", "707"):
             self.assertEqual(make_request(code), f"@{code}\r\n".encode())

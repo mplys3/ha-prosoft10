@@ -210,9 +210,15 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
             try:
                 client = await self._async_connect()
                 if code in LOG_CODES:
-                    value = await read_log(client, code, self._queue)
+                    value = await read_log(
+                        client, code, self._queue,
+                        completion_info=self.log_diagnostics[code],
+                    )
                     self.logs[code] = (datetime.now(UTC), value)
-                    self.log_diagnostics[code].update(status="complete", error=None)
+                    self.log_diagnostics[code].update(
+                        status=("received" if self.log_diagnostics[code].get("completion") == "idle" else "complete"),
+                        error=None,
+                    )
                     self.async_update_listeners()
                     return value
                 return await read_parameter(client, code, self._queue)

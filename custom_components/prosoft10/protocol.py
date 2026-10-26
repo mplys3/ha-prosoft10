@@ -83,8 +83,9 @@ async def read_log(
     timeout: float = 20.0,
     total_timeout: float = 120.0,
     max_bytes: int = 262144,
+    completion_info: dict | None = None,
 ) -> str:
-    """Collect raw log text through its blank-line terminator, never truncate."""
+    """Collect logs until a blank line or idle after complete dated records."""
     if code not in LOG_CODES:
         raise ValueError("Only log codes 706 and 707 are supported")
     while not queue.empty():
@@ -99,7 +100,24 @@ async def read_log(
                 )
             stage = "receive_log"
             while True:
-                fragment = await asyncio.wait_for(queue.get(), timeout)
+                try:
+                    fragment = await asyncio.wait_for(queue.get(), timeout)
+                except TimeoutError:
+                    # This device sends semicolon-delimited records without an
+                    # end marker. Only accept idle at a validated record boundary.
+                    text = data.decode("latin-1").strip()
+                    records = text[:-1].split(";") if text.endswith(";") else []
+                    if records and all(
+                        re.fullmatch(r"[0-9]{4}\.[0-9]{2}\.[0-9]{2}-[0-9]{2}:[0-9]{2}: .+", row.strip())
+                        for row in records
+                    ):
+                        if completion_info is not None:
+                            completion_info.update(
+                                completion="idle", completeness_confirmed=False,
+                                received_bytes=len(data), record_count=len(records),
+                            )
+                        return text
+                    raise
                 data.extend(fragment)
                 if len(data) > max_bytes:
                     raise LogReadError("Log exceeds size limit", bytes(data[:max_bytes]), stage)
@@ -108,6 +126,11 @@ async def read_log(
                 normalized = text.replace("\r\n", "\n")
                 end = re.search(r"(?:^|\n)[ \t]*\n", normalized)
                 if end is not None:
+                    if completion_info is not None:
+                        completion_info.update(
+                            completion="blank_line", completeness_confirmed=True,
+                            received_bytes=len(data),
+                        )
                     return normalized[:end.start()].rstrip("\r\n")
     except TimeoutError as error:
         raise LogReadError(

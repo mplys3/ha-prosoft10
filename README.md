@@ -78,8 +78,8 @@ data:
 ```
 
 The response's `value` contains raw log text; it is not decoded into dated
-entities. Normal polling waits while the log is read. The reader waits for a
-blank-line terminator, with a 20-second inactivity timeout, a 120-second total
+entities. Normal polling waits while the log is read. The reader accepts a blank-line terminator or 20 seconds of inactivity after
+semicolon-terminated, dated records. It has a 120-second total
 limit, and a 256 KiB size limit. An incomplete transfer fails and disconnects
 the session instead of returning a silently truncated history. An empty log
 returns an empty string. Framing is based on analysis of the vendor app and
@@ -98,3 +98,11 @@ Log sensors also expose `status` (`not_requested`, `fetching`, `complete`,
 `stage`, `tail_hex`, and `partial_log` describe the incomplete response. Partial
 data is diagnostic only, never a successful or complete history. The sensor
 state remains the last successful retrieval time (unknown until one succeeds).
+
+Firmware that returns semicolon-separated dated records without a blank line
+is supported. After 20 seconds of inactivity, a response ending at a valid
+record boundary is exposed in `log` and the sensor timestamp is updated.
+Attributes show `status: received`, `completion: idle`, `record_count`, and
+`completeness_confirmed: false`: receipt is confirmed, but the device did not
+send an explicit end marker. A response ending mid-record, an empty timeout,
+a failed write, or hitting the total time/size limit still fails.
