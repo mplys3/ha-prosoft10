@@ -31,7 +31,11 @@ from .const import (
     WATER_REMAINING,
 )
 from .coordinator import ProsoftCoordinator
-from .protocol import parse_regeneration_date, parse_regeneration_time
+from .protocol import (
+    parse_log_entries,
+    parse_regeneration_date,
+    parse_regeneration_time,
+)
 
 
 def _number(value: str | None) -> int | float | None:
@@ -236,7 +240,7 @@ class ProsoftLog(ProsoftSensor):
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:text-box-outline"
-    _unrecorded_attributes = frozenset({"log", "partial_log", "tail_hex"})
+    _unrecorded_attributes = frozenset({"log", "entries", "partial_log", "tail_hex"})
 
     def __init__(self, coordinator: ProsoftCoordinator, code: str, key: str) -> None:
         super().__init__(coordinator, key)
@@ -253,5 +257,6 @@ class ProsoftLog(ProsoftSensor):
         result = self.coordinator.logs.get(self._code)
         return {
             "code": self._code, "log": result[1] if result is not None else None,
+            "entries": parse_log_entries(result[1]) if result is not None else [],
             **self.coordinator.log_diagnostics.get(self._code, {"status": "not_requested"}),
         }

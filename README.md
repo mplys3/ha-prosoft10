@@ -106,3 +106,19 @@ Attributes show `status: received`, `completion: idle`, `record_count`, and
 `completeness_confirmed: false`: receipt is confirmed, but the device did not
 send an explicit end marker. A response ending mid-record, an empty timeout,
 a failed write, or hitting the total time/size limit still fails.
+
+### Readable history card
+
+Log sensors expose `entries`: a newest-first list with `date` (YYYY-MM-DD),
+`time` (HH:MM), `content`, and `raw`. These are the device's recorded dates,
+not verified real-world timestamps. Duplicate records are retained; malformed
+records remain visible with unknown date/time. Structured entries, like raw
+logs, are excluded from recorder history.
+
+Use [the combined log card](examples/prosoft-logs-card.yaml) in a dashboard:
+edit the dashboard, add a Manual card, and paste the YAML. Replace the two
+button and two sensor entity IDs if yours differ. The card uses built-in
+Entities and Markdown cards only. Fetch buttons and both dated tables appear
+together and update when the sensor attributes change. The integration does
+not automatically modify existing dashboards. Fetch the logs again after
+restarting Home Assistant.

@@ -19,6 +19,7 @@ from custom_components.prosoft10.protocol import (
     LogReadError,
     ProtocolError,
     make_request,
+    parse_log_entries,
     parse_regeneration_date,
     parse_regeneration_time,
     parse_reply,
@@ -28,6 +29,24 @@ from custom_components.prosoft10.protocol import (
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_log_entries_sort_and_preserve_device_content(self) -> None:
+        rows = parse_log_entries(
+            "2022.01.01-02:58: Systemets dato =21/02/-5132890;"
+            "2026.10.06-13:41: Hardhed =33 dH;"
+            "2026.10.06-13:41: Hardhed =33 dH;"
+            "2026.10.06-14:00: Start af regen. tilbage:1067 L;"
+            "unrecognized record;;"
+        )
+        self.assertEqual(len(rows), 5)
+        self.assertEqual(rows[0]["date"], "2026-10-06")
+        self.assertEqual(rows[0]["time"], "14:00")
+        self.assertEqual(rows[0]["content"], "Start af regen. tilbage:1067 L")
+        self.assertEqual(rows[1], rows[2])
+        self.assertEqual(rows[3]["content"], "Systemets dato =21/02/-5132890")
+        self.assertIsNone(rows[4]["date"])
+        self.assertEqual(rows[4]["content"], "unrecognized record")
+        self.assertEqual(parse_log_entries(";  ;"), [])
+
     def test_semicolon_log_is_returned_after_idle(self) -> None:
         async def run():
             # Verbatim records from the user's captured 707 transfer.

@@ -75,6 +75,30 @@ def parse_reply(code: str, data: bytes) -> str:
     return value
 
 
+def parse_log_entries(text: str) -> list[dict[str, str | None]]:
+    """Split dated records without guessing timestamps or discarding bad rows."""
+    entries = []
+    for record in text.split(";"):
+        record = record.strip()
+        if not record:
+            continue
+        match = re.fullmatch(
+            r"([0-9]{4})\.([0-9]{2})\.([0-9]{2})-([0-9]{2}:[0-9]{2}):\s*(.*)",
+            record, re.DOTALL,
+        )
+        if match:
+            year, month, day, clock, content = match.groups()
+            entries.append({
+                "date": f"{year}-{month}-{day}", "time": clock,
+                "content": content, "raw": record,
+            })
+        else:
+            entries.append({"date": None, "time": None, "content": record, "raw": record})
+    # The device groups records by type; display newest recorded date first.
+    # Retain duplicates and leave unrecognized records at the end.
+    return sorted(entries, key=lambda row: (row["date"] or "", row["time"] or ""), reverse=True)
+
+
 async def read_log(
     client: BleakClient,
     code: str,

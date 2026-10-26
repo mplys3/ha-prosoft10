@@ -89,10 +89,12 @@ class SensorImportTests(unittest.TestCase):
             log = module.ProsoftLog(coordinator, "706", "parameter_log")
             self.assertIsNone(log.native_value)
             self.assertIsNone(log.extra_state_attributes["log"])
+            self.assertEqual(log.extra_state_attributes["entries"], [])
             stamp = datetime.now(UTC)
             coordinator.logs["706"] = (stamp, "Hardhed 11 dH")
             self.assertEqual(log.native_value, stamp)
             self.assertEqual(log.extra_state_attributes["log"], "Hardhed 11 dH")
+            self.assertEqual(log.extra_state_attributes["entries"][0]["content"], "Hardhed 11 dH")
             coordinator.data = {"1005": "1.25"}
             self.assertEqual(log.extra_state_attributes["log"], "Hardhed 11 dH")
 
