@@ -21,6 +21,7 @@ from .beacon import continuous_flow_alarm
 from .const import CHARACTERISTIC_UUID, CONFIG_CODES, POLL_INTERVAL, READ_CODES
 from .protocol import (
     LOG_CODES,
+    LogReadError,
     ProtocolError,
     notification_handler,
     read_log,
@@ -51,6 +52,7 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         self._last_advertisement: float | None = None
         self._poll_count = 0
         self.logs: dict[str, tuple[datetime, str]] = {}
+        self.log_diagnostics: dict[str, dict] = {}
 
     @property
     def flow_alarm(self) -> bool | None:
@@ -198,18 +200,37 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
                 self._operation_task = None
 
     async def async_read_parameter(self, code: str) -> str:
-        """Read a parameter using the polling connection without storing its value."""
+        """Read one parameter or store a manually requested log."""
         async with self._async_operation():
+            if code in LOG_CODES:
+                self.log_diagnostics[code] = {
+                    "status": "fetching", "last_attempt": datetime.now(UTC).isoformat()
+                }
+                self.async_update_listeners()
             try:
                 client = await self._async_connect()
                 if code in LOG_CODES:
                     value = await read_log(client, code, self._queue)
                     self.logs[code] = (datetime.now(UTC), value)
+                    self.log_diagnostics[code].update(status="complete", error=None)
                     self.async_update_listeners()
                     return value
                 return await read_parameter(client, code, self._queue)
-            except (BleakError, TimeoutError, OSError, ProtocolError):
-                await self._async_disconnect()
+            except Exception as error:
+                if code in LOG_CODES:
+                    diagnostic = self.log_diagnostics[code]
+                    diagnostic.update(status="failed", error=f"{type(error).__name__}: {error}")
+                    if isinstance(error, LogReadError):
+                        diagnostic.update(
+                            received_bytes=error.received_bytes,
+                            partial_log=error.partial_log,
+                            tail_hex=error.tail_hex,
+                            stage=error.stage,
+                        )
+                    self.async_update_listeners()
+                    _LOGGER.warning("Log %s failed: %s: %s", code, type(error).__name__, error)
+                if isinstance(error, (BleakError, TimeoutError, OSError, ProtocolError)):
+                    await self._async_disconnect()
                 raise
 
     async def _async_update_data(self) -> dict[str, str]:

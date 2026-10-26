@@ -92,3 +92,9 @@ Sensors are unknown until first retrieval. Failed retrievals keep the previous
 log and timestamp. Logs are held in memory and must be fetched again after
 restart/reload. The large `log` attribute is excluded from recorder history.
 These buttons only read history; they do not change device settings.
+
+Log sensors also expose `status` (`not_requested`, `fetching`, `complete`,
+`failed`), `last_attempt`, and `error`. On a transfer timeout, `received_bytes`,
+`stage`, `tail_hex`, and `partial_log` describe the incomplete response. Partial
+data is diagnostic only, never a successful or complete history. The sensor
+state remains the last successful retrieval time (unknown until one succeeds).

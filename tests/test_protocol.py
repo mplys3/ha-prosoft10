@@ -16,6 +16,7 @@ sys.modules.setdefault("custom_components.prosoft10", package)
 
 from custom_components.prosoft10.beacon import continuous_flow_alarm
 from custom_components.prosoft10.protocol import (
+    LogReadError,
     ProtocolError,
     make_request,
     parse_regeneration_date,
@@ -33,6 +34,23 @@ class ProtocolTests(unittest.TestCase):
         for code in ("700", "70", "0706x", "706\r\n", "１２３４"):
             with self.assertRaises(ValueError):
                 make_request(code)
+
+    def test_log_timeout_distinguishes_no_reply_from_write_failure(self) -> None:
+        async def run():
+            class SilentClient:
+                async def write_gatt_char(self, *_args, **_kwargs):
+                    pass
+            with self.assertRaises(LogReadError) as caught:
+                await read_log(SilentClient(), "707", asyncio.Queue(), timeout=0.001)
+            self.assertEqual(caught.exception.received_bytes, 0)
+            self.assertEqual(caught.exception.stage, "receive_log")
+            class FailedWrite:
+                async def write_gatt_char(self, *_args, **_kwargs):
+                    raise TimeoutError
+            with self.assertRaises(LogReadError) as caught:
+                await read_log(FailedWrite(), "707", asyncio.Queue())
+            self.assertEqual(caught.exception.stage, "write_request")
+        asyncio.run(run())
 
     def test_log_fragments_preserve_all_records(self) -> None:
         async def run():
@@ -55,8 +73,11 @@ class ProtocolTests(unittest.TestCase):
             class Client:
                 async def write_gatt_char(self, *_args, **_kwargs):
                     queue.put_nowait(b"record without terminator")
-            with self.assertRaises(TimeoutError):
+            with self.assertRaises(LogReadError) as caught:
                 await read_log(Client(), "706", queue, timeout=0.01)
+            self.assertEqual(caught.exception.partial_log, "record without terminator")
+            self.assertEqual(caught.exception.stage, "receive_log")
+            self.assertEqual(caught.exception.received_bytes, 25)
             with self.assertRaises(ProtocolError):
                 await read_log(Client(), "706", queue, max_bytes=5)
             class EmptyClient:

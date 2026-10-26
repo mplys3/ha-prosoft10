@@ -88,12 +88,14 @@ class CoordinatorTests(unittest.TestCase):
                 self.assertEqual(await normal_task, "11")
             saved = coordinator.logs["706"]
             self.assertIsNotNone(saved[0].tzinfo)
-            coordinator.async_update_listeners.assert_called_once()
+            self.assertEqual(coordinator.async_update_listeners.call_count, 2)
             client = coordinator._client
             with patch.object(module, "read_log", new_callable=AsyncMock, side_effect=TimeoutError), self.assertRaises(TimeoutError):
                 await coordinator.async_read_parameter("706")
             self.assertEqual(coordinator.logs["706"], saved)
             client.disconnect.assert_awaited_once()
+            self.assertEqual(coordinator.log_diagnostics["706"]["status"], "failed")
+            self.assertIn("TimeoutError", coordinator.log_diagnostics["706"]["error"])
         asyncio.run(run())
 
     def test_shutdown_cancels_reads_and_prevents_reconnection(self) -> None:

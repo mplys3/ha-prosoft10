@@ -236,7 +236,7 @@ class ProsoftLog(ProsoftSensor):
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_icon = "mdi:text-box-outline"
-    _unrecorded_attributes = frozenset({"log"})
+    _unrecorded_attributes = frozenset({"log", "partial_log", "tail_hex"})
 
     def __init__(self, coordinator: ProsoftCoordinator, code: str, key: str) -> None:
         super().__init__(coordinator, key)
@@ -251,4 +251,7 @@ class ProsoftLog(ProsoftSensor):
     @property
     def extra_state_attributes(self) -> dict[str, str | None]:
         result = self.coordinator.logs.get(self._code)
-        return {"code": self._code, "log": result[1] if result is not None else None}
+        return {
+            "code": self._code, "log": result[1] if result is not None else None,
+            **self.coordinator.log_diagnostics.get(self._code, {"status": "not_requested"}),
+        }

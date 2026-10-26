@@ -85,6 +85,7 @@ class SensorImportTests(unittest.TestCase):
             self.assertEqual(salt.native_value, 1.25)
             self.assertEqual(salt._attr_native_unit_of_measurement, "kg")
             coordinator.logs = {}
+            coordinator.log_diagnostics = {}
             log = module.ProsoftLog(coordinator, "706", "parameter_log")
             self.assertIsNone(log.native_value)
             self.assertIsNone(log.extra_state_attributes["log"])

@@ -20,6 +20,17 @@ class ProtocolError(Exception):
     """The device did not return a usable reply."""
 
 
+class LogReadError(ProtocolError):
+    """An incomplete transfer with bounded raw data for diagnosis."""
+
+    def __init__(self, message: str, data: bytes, stage: str) -> None:
+        self.partial_log = data.decode("latin-1")
+        self.received_bytes = len(data)
+        self.tail_hex = data[-64:].hex(" ")
+        self.stage = stage
+        super().__init__(f"{message}; stage={stage}; received_bytes={len(data)}")
+
+
 LOG_CODES = {"706", "707"}
 
 
@@ -79,22 +90,30 @@ async def read_log(
     while not queue.empty():
         queue.get_nowait()
     data = bytearray()
-    async with asyncio.timeout(total_timeout):
-        async with asyncio.timeout(5):
-            await client.write_gatt_char(
-                CHARACTERISTIC_UUID, make_request(code), response=True
-            )
-        while True:
-            fragment = await asyncio.wait_for(queue.get(), timeout)
-            data.extend(fragment)
-            if len(data) > max_bytes:
-                raise ProtocolError("Log exceeds size limit; no complete result returned")
-            text = data.decode("latin-1")
-            # Work on the accumulated buffer: CR/LF may span BLE notifications.
-            normalized = text.replace("\r\n", "\n")
-            end = re.search(r"(?:^|\n)[ \t]*\n", normalized)
-            if end is not None:
-                return normalized[:end.start()].rstrip("\r\n")
+    stage = "write_request"
+    try:
+        async with asyncio.timeout(total_timeout):
+            async with asyncio.timeout(5):
+                await client.write_gatt_char(
+                    CHARACTERISTIC_UUID, make_request(code), response=True
+                )
+            stage = "receive_log"
+            while True:
+                fragment = await asyncio.wait_for(queue.get(), timeout)
+                data.extend(fragment)
+                if len(data) > max_bytes:
+                    raise LogReadError("Log exceeds size limit", bytes(data[:max_bytes]), stage)
+                text = data.decode("latin-1")
+                # Work on the accumulated buffer: CR/LF may span BLE notifications.
+                normalized = text.replace("\r\n", "\n")
+                end = re.search(r"(?:^|\n)[ \t]*\n", normalized)
+                if end is not None:
+                    return normalized[:end.start()].rstrip("\r\n")
+    except TimeoutError as error:
+        raise LogReadError(
+            "Log transfer timed out before a recognized terminator",
+            bytes(data), stage,
+        ) from error
 
 
 async def read_parameter(

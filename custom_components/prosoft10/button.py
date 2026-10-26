@@ -34,4 +34,4 @@ class ProsoftFetchLog(CoordinatorEntity[ProsoftCoordinator], ButtonEntity):
         try:
             await self.coordinator.async_read_parameter(self._code)
         except Exception as error:
-            raise HomeAssistantError(f"Could not fetch ProSOFT log {self._code}: {error}") from error
+            raise HomeAssistantError(f"Could not fetch ProSOFT log {self._code}: {type(error).__name__}: {error}") from error
