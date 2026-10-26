@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import ClassVar
 
@@ -62,6 +62,8 @@ async def async_setup_entry(
             ProsoftTotalWater(coordinator),
             ProsoftRegeneration(coordinator),
             ProsoftLastRegeneration(coordinator),
+            ProsoftLog(coordinator, "706", "parameter_log"),
+            ProsoftLog(coordinator, "707", "event_log"),
             *(
                 ProsoftRegenerationTime(coordinator, index, code)
                 for index, code in enumerate(REGENERATION_TIMES, 1)
@@ -227,3 +229,26 @@ class ProsoftLastRegeneration(ProsoftSensor):
     @property
     def native_value(self) -> date | None:
         return parse_regeneration_date(self.coordinator.data.get(LAST_REGENERATION))
+
+
+class ProsoftLog(ProsoftSensor):
+    """Last manually retrieved log, kept separately from live polling data."""
+
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:text-box-outline"
+    _unrecorded_attributes = frozenset({"log"})
+
+    def __init__(self, coordinator: ProsoftCoordinator, code: str, key: str) -> None:
+        super().__init__(coordinator, key)
+        self._attr_translation_key = key
+        self._code = code
+
+    @property
+    def native_value(self) -> datetime | None:
+        result = self.coordinator.logs.get(self._code)
+        return result[0] if result is not None else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | None]:
+        result = self.coordinator.logs.get(self._code)
+        return {"code": self._code, "log": result[1] if result is not None else None}

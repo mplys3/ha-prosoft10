@@ -6,6 +6,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from time import monotonic
 
 from bleak import BleakClient
@@ -18,7 +19,13 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from .beacon import continuous_flow_alarm
 from .const import CHARACTERISTIC_UUID, CONFIG_CODES, POLL_INTERVAL, READ_CODES
-from .protocol import ProtocolError, notification_handler, read_parameter
+from .protocol import (
+    LOG_CODES,
+    ProtocolError,
+    notification_handler,
+    read_log,
+    read_parameter,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -43,6 +50,7 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         self._flow_alarm: bool | None = None
         self._last_advertisement: float | None = None
         self._poll_count = 0
+        self.logs: dict[str, tuple[datetime, str]] = {}
 
     @property
     def flow_alarm(self) -> bool | None:
@@ -194,8 +202,13 @@ class ProsoftCoordinator(DataUpdateCoordinator[dict[str, str]]):
         async with self._async_operation():
             try:
                 client = await self._async_connect()
+                if code in LOG_CODES:
+                    value = await read_log(client, code, self._queue)
+                    self.logs[code] = (datetime.now(UTC), value)
+                    self.async_update_listeners()
+                    return value
                 return await read_parameter(client, code, self._queue)
-            except (BleakError, TimeoutError, OSError):
+            except (BleakError, TimeoutError, OSError, ProtocolError):
                 await self._async_disconnect()
                 raise
 

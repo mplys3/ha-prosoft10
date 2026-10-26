@@ -1,28 +1,85 @@
 {
   "config": {
     "step": {
-      "user": {"title": "Aqua Danmark ProSOFT 10", "data": {"address": "Bluetooth-adresse"}},
-      "confirm": {"title": "Forbind til ProSOFT 10", "description": "Bekræft, at dette er dit blødgøringsanlæg."}
+      "user": {
+        "title": "Aqua Danmark ProSOFT 10",
+        "data": {
+          "address": "Bluetooth-adresse"
+        }
+      },
+      "confirm": {
+        "title": "Forbind til ProSOFT 10",
+        "description": "Bekræft, at dette er dit blødgøringsanlæg."
+      }
     },
-    "error": {"invalid_address": "Skriv en Bluetooth-adresse som AA:BB:CC:DD:EE:FF"},
-    "abort": {"already_configured": "Anlægget er allerede tilføjet", "not_connectable": "Denne Bluetooth-enhed kan ikke forbindes til"}
+    "error": {
+      "invalid_address": "Skriv en Bluetooth-adresse som AA:BB:CC:DD:EE:FF"
+    },
+    "abort": {
+      "already_configured": "Anlægget er allerede tilføjet",
+      "not_connectable": "Denne Bluetooth-enhed kan ikke forbindes til"
+    }
   },
   "entity": {
     "sensor": {
-      "last_regeneration": {"name": "Seneste regenerering"},
-      "water_remaining": {"name": "Resterende behandlingskapacitet"},
-      "salt_remaining": {"name": "Resterende salt"},
-      "salt_level": {"name": "Saltniveau"},
-      "salt_per_regeneration": {"name": "Salt per regenerering"},
-      "total_treated_water": {"name": "Samlet behandlet vand"},
-      "regeneration": {"name": "Regenerering", "state": {"none": "Ingen", "in_progress": "I gang", "scheduled": "Planlagt", "unknown": "Ukendt"}},
-      "regeneration_time_1": {"name": "Regenereringstid 1"},
-      "regeneration_time_2": {"name": "Regenereringstid 2"},
-      "regeneration_time_3": {"name": "Regenereringstid 3"},
-      "regeneration_time_4": {"name": "Regenereringstid 4"}
+      "last_regeneration": {
+        "name": "Seneste regenerering"
+      },
+      "water_remaining": {
+        "name": "Resterende behandlingskapacitet"
+      },
+      "salt_remaining": {
+        "name": "Resterende salt"
+      },
+      "salt_level": {
+        "name": "Saltniveau"
+      },
+      "salt_per_regeneration": {
+        "name": "Salt per regenerering"
+      },
+      "total_treated_water": {
+        "name": "Samlet behandlet vand"
+      },
+      "regeneration": {
+        "name": "Regenerering",
+        "state": {
+          "none": "Ingen",
+          "in_progress": "I gang",
+          "scheduled": "Planlagt",
+          "unknown": "Ukendt"
+        }
+      },
+      "regeneration_time_1": {
+        "name": "Regenereringstid 1"
+      },
+      "regeneration_time_2": {
+        "name": "Regenereringstid 2"
+      },
+      "regeneration_time_3": {
+        "name": "Regenereringstid 3"
+      },
+      "regeneration_time_4": {
+        "name": "Regenereringstid 4"
+      },
+      "parameter_log": {
+        "name": "Parameterlog"
+      },
+      "event_log": {
+        "name": "Hændelseslog"
+      }
     },
     "binary_sensor": {
-      "continuous_flow": {"name": "Konstant vandflow"}
+      "continuous_flow": {
+        "name": "Konstant vandflow"
+      }
+    },
+    "button": {
+      "fetch_parameter_log": {
+        "name": "Hent parameterlog"
+      },
+      "fetch_event_log": {
+        "name": "Hent hændelseslog"
+      }
     }
   }
 }

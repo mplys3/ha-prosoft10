@@ -21,11 +21,50 @@ from custom_components.prosoft10.protocol import (
     parse_regeneration_date,
     parse_regeneration_time,
     parse_reply,
+    read_log,
     read_parameter,
 )
 
 
 class ProtocolTests(unittest.TestCase):
+    def test_log_codes_and_validation(self) -> None:
+        for code in ("706", "707"):
+            self.assertEqual(make_request(code), f"@{code}\r\n".encode())
+        for code in ("700", "70", "0706x", "706\r\n", "１２３４"):
+            with self.assertRaises(ValueError):
+                make_request(code)
+
+    def test_log_fragments_preserve_all_records(self) -> None:
+        async def run():
+            for code in ("706", "707"):
+                queue = asyncio.Queue()
+                class Client:
+                    async def write_gatt_char(self, _uuid, data, response, code=code, queue=queue):
+                        self.sent = data
+                        for part in (b"@" + code.encode(), b"first\r", b"\nsecond @1014=11", b"\r\n", b"\r", b"\n"):
+                            queue.put_nowait(part)
+                client = Client()
+                value = await read_log(client, code, queue, timeout=0.05)
+                self.assertEqual(value, f"@{code}first\nsecond @1014=11")
+                self.assertEqual(client.sent, f"@{code}\r\n".encode())
+        asyncio.run(run())
+
+    def test_incomplete_or_oversize_log_never_returns_partial_success(self) -> None:
+        async def run():
+            queue = asyncio.Queue()
+            class Client:
+                async def write_gatt_char(self, *_args, **_kwargs):
+                    queue.put_nowait(b"record without terminator")
+            with self.assertRaises(TimeoutError):
+                await read_log(Client(), "706", queue, timeout=0.01)
+            with self.assertRaises(ProtocolError):
+                await read_log(Client(), "706", queue, max_bytes=5)
+            class EmptyClient:
+                async def write_gatt_char(self, *_args, **_kwargs):
+                    queue.put_nowait(b"\r\n")
+            self.assertEqual(await read_log(EmptyClient(), "707", queue), "")
+        asyncio.run(run())
+
     def test_regeneration_time_and_disabled_slot(self) -> None:
         self.assertEqual(str(parse_regeneration_time("02:30")), "02:30:00")
         self.assertIsNone(parse_regeneration_time("99:99"))

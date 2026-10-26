@@ -65,3 +65,30 @@ The BLE characteristic is `0000abf1-0000-1000-8000-00805f9b34fb`. A read request
 Please open a [GitHub issue](https://github.com/mplys3/ha-prosoft10/issues) with your Home Assistant version, device model and relevant debug messages if a reading is missing or wrong. Avoid posting your Bluetooth address publicly.
 
 This project is not affiliated with Aqua Danmark.
+
+### Read history logs
+
+The `prosoft10.read_parameter` action also accepts `706` (parameter history)
+and `707` (event history). Other three-digit codes are not supported.
+
+```yaml
+action: prosoft10.read_parameter
+data:
+  code: "706"
+```
+
+The response's `value` contains raw log text; it is not decoded into dated
+entities. Normal polling waits while the log is read. The reader waits for a
+blank-line terminator, with a 20-second inactivity timeout, a 120-second total
+limit, and a 256 KiB size limit. An incomplete transfer fails and disconnects
+the session instead of returning a silently truncated history. An empty log
+returns an empty string. Framing is based on analysis of the vendor app and
+synthetic tests; validation with a physical device's log transfer is pending.
+
+On the ProSOFT device page, press **Fetch parameter log** or **Fetch event log**.
+The corresponding **Parameter log** or **Event log** sensor shows the last
+successful retrieval time; expand its attributes to see `log` (raw text).
+Sensors are unknown until first retrieval. Failed retrievals keep the previous
+log and timestamp. Logs are held in memory and must be fetched again after
+restart/reload. The large `log` attribute is excluded from recorder history.
+These buttons only read history; they do not change device settings.

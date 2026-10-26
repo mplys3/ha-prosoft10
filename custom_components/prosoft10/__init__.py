@@ -11,7 +11,7 @@ from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from .const import DOMAIN
 from .coordinator import ProsoftCoordinator
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
 
 
 async def async_setup(hass: HomeAssistant, _config: dict) -> bool:
@@ -50,7 +50,7 @@ async def async_setup(hass: HomeAssistant, _config: dict) -> bool:
         schema=vol.Schema(
             {
                 vol.Required("code"): vol.All(
-                    vol.Coerce(str), vol.Match(r"^[0-9]{4}$")
+                    vol.Coerce(str), vol.Match(r"^(?:[0-9]{4}|706|707)$")
                 ),
                 vol.Optional("address"): str,
             }

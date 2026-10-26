@@ -22,7 +22,7 @@ class ReadParameterServiceTests(unittest.TestCase):
         const = types.ModuleType("homeassistant.const")
         const.EVENT_HOMEASSISTANT_STOP = "homeassistant_stop"
         const.Platform = types.SimpleNamespace(
-            SENSOR="sensor", BINARY_SENSOR="binary_sensor"
+            SENSOR="sensor", BINARY_SENSOR="binary_sensor", BUTTON="button"
         )
         core = types.ModuleType("homeassistant.core")
         core.callback = lambda func: func
@@ -68,6 +68,10 @@ class ReadParameterServiceTests(unittest.TestCase):
             self.assertEqual(registered["supports_response"], "only")
             schema = registered["schema"]
             self.assertEqual(schema({"code": 1146}), {"code": "1146"})
+            self.assertEqual(schema({"code": 706}), {"code": "706"})
+            self.assertEqual(schema({"code": "707"}), {"code": "707"})
+            with self.assertRaises(vol.Invalid):
+                schema({"code": "700"})
             with self.assertRaises(vol.Invalid):
                 schema({"code": "@1146"})
 

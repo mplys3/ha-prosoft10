@@ -1,10 +1,10 @@
 read_parameter:
   name: Read parameter
-  description: Read a four-digit parameter from ProSOFT 10 and return its raw value. The response is not saved as an entity.
+  description: Read a four-digit parameter or log 706/707 from ProSOFT 10 and return its raw text. Log reads may take up to 120 seconds. The response is not saved as an entity.
   fields:
     code:
       name: Parameter code
-      description: Four-digit code, for example 1146.
+      description: Four-digit parameter (for example 1014), 706 for parameter history, or 707 for event history.
       required: true
       example: "1146"
       selector:

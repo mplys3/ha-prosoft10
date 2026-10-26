@@ -7,6 +7,7 @@ Replies observed on the device have no required CR/LF terminator.
 from __future__ import annotations
 
 import asyncio
+import re
 from collections.abc import Callable
 from datetime import date, datetime, time
 
@@ -19,10 +20,13 @@ class ProtocolError(Exception):
     """The device did not return a usable reply."""
 
 
+LOG_CODES = {"706", "707"}
+
+
 def make_request(code: str) -> bytes:
-    """Encode a four-digit read request; never writes a setting."""
-    if len(code) != 4 or not code.isascii() or not code.isdecimal():
-        raise ValueError("Parameter code must be four ASCII decimal digits")
+    """Encode a parameter or supported log read request."""
+    if (len(code) != 4 and code not in LOG_CODES) or not code.isascii() or not code.isdecimal():
+        raise ValueError("Use a four-digit parameter or log code 706/707")
     return f"@{code}\r\n".encode("ascii")
 
 
@@ -58,6 +62,39 @@ def parse_reply(code: str, data: bytes) -> str:
     if not value or value.lower() == "invalid data":
         raise ProtocolError(f"Empty or invalid reply for parameter {code}")
     return value
+
+
+async def read_log(
+    client: BleakClient,
+    code: str,
+    queue: asyncio.Queue[bytes],
+    *,
+    timeout: float = 20.0,
+    total_timeout: float = 120.0,
+    max_bytes: int = 262144,
+) -> str:
+    """Collect raw log text through its blank-line terminator, never truncate."""
+    if code not in LOG_CODES:
+        raise ValueError("Only log codes 706 and 707 are supported")
+    while not queue.empty():
+        queue.get_nowait()
+    data = bytearray()
+    async with asyncio.timeout(total_timeout):
+        async with asyncio.timeout(5):
+            await client.write_gatt_char(
+                CHARACTERISTIC_UUID, make_request(code), response=True
+            )
+        while True:
+            fragment = await asyncio.wait_for(queue.get(), timeout)
+            data.extend(fragment)
+            if len(data) > max_bytes:
+                raise ProtocolError("Log exceeds size limit; no complete result returned")
+            text = data.decode("latin-1")
+            # Work on the accumulated buffer: CR/LF may span BLE notifications.
+            normalized = text.replace("\r\n", "\n")
+            end = re.search(r"(?:^|\n)[ \t]*\n", normalized)
+            if end is not None:
+                return normalized[:end.start()].rstrip("\r\n")
 
 
 async def read_parameter(

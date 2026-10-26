@@ -61,6 +61,41 @@ def _load_coordinator():
 
 
 class CoordinatorTests(unittest.TestCase):
+    def test_log_fetch_serializes_io_and_retains_last_success(self) -> None:
+        async def run():
+            module = _load_coordinator()
+            coordinator = module.ProsoftCoordinator(
+                object(), types.SimpleNamespace(data={"address": "AA:BB:CC:DD:EE:FF"})
+            )
+            coordinator._client = types.SimpleNamespace(is_connected=True, disconnect=AsyncMock())
+            coordinator.async_update_listeners = Mock()
+            started = asyncio.Event()
+            release = asyncio.Event()
+            async def stream(*_args):
+                started.set()
+                await release.wait()
+                return "Hardhed 11 dH"
+            with patch.object(module, "read_log", side_effect=stream), patch.object(
+                module, "read_parameter", new_callable=AsyncMock, return_value="11"
+            ) as normal:
+                log_task = asyncio.create_task(coordinator.async_read_parameter("706"))
+                await started.wait()
+                normal_task = asyncio.create_task(coordinator.async_read_parameter("1014"))
+                await asyncio.sleep(0)
+                normal.assert_not_awaited()
+                release.set()
+                self.assertEqual(await log_task, "Hardhed 11 dH")
+                self.assertEqual(await normal_task, "11")
+            saved = coordinator.logs["706"]
+            self.assertIsNotNone(saved[0].tzinfo)
+            coordinator.async_update_listeners.assert_called_once()
+            client = coordinator._client
+            with patch.object(module, "read_log", new_callable=AsyncMock, side_effect=TimeoutError), self.assertRaises(TimeoutError):
+                await coordinator.async_read_parameter("706")
+            self.assertEqual(coordinator.logs["706"], saved)
+            client.disconnect.assert_awaited_once()
+        asyncio.run(run())
+
     def test_shutdown_cancels_reads_and_prevents_reconnection(self) -> None:
         async def run() -> None:
             for manual in (False, True):

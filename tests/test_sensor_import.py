@@ -4,7 +4,7 @@ import importlib.util
 import sys
 import types
 import unittest
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,7 +16,7 @@ class SensorImportTests(unittest.TestCase):
         )
         sensor = types.ModuleType("homeassistant.components.sensor")
         sensor.SensorDeviceClass = types.SimpleNamespace(
-            WEIGHT="weight", WATER="water", ENUM="enum", DATE="date"
+            WEIGHT="weight", WATER="water", ENUM="enum", DATE="date", TIMESTAMP="timestamp"
         )
         sensor.SensorEntity = type("SensorEntity", (), {})
         sensor.SensorStateClass = types.SimpleNamespace(
@@ -84,6 +84,16 @@ class SensorImportTests(unittest.TestCase):
             salt = module.ProsoftSaltPerRegeneration(coordinator)
             self.assertEqual(salt.native_value, 1.25)
             self.assertEqual(salt._attr_native_unit_of_measurement, "kg")
+            coordinator.logs = {}
+            log = module.ProsoftLog(coordinator, "706", "parameter_log")
+            self.assertIsNone(log.native_value)
+            self.assertIsNone(log.extra_state_attributes["log"])
+            stamp = datetime.now(UTC)
+            coordinator.logs["706"] = (stamp, "Hardhed 11 dH")
+            self.assertEqual(log.native_value, stamp)
+            self.assertEqual(log.extra_state_attributes["log"], "Hardhed 11 dH")
+            coordinator.data = {"1005": "1.25"}
+            self.assertEqual(log.extra_state_attributes["log"], "Hardhed 11 dH")
 
 
 if __name__ == "__main__":
