@@ -1,4 +1,6 @@
-# Replace the four entity IDs below if yours differ.
+# ET ENKELT KORT: Erstat hele indholdet i et manuelt korts kodeeditor.
+# Til dashboardets rå konfiguration: brug prosoft-logs-dashboard.yaml.
+# Vejledning: examples/README.md. Kontrollér alle fire entitets-id’er.
 type: vertical-stack
 cards:
   - type: entities
@@ -23,7 +25,10 @@ cards:
       Hentningen mislykkedes. Eventuelle tidligere poster vises nedenfor.
       {% endif %}
       {% if rows %}
-      Senest hentet: {{ as_timestamp(states(entity)) | timestamp_custom('%d/%m/%Y %H:%M') }}
+      {% set fetched = as_timestamp(states(entity), none) %}
+      {% if fetched is not none %}
+      Senest hentet: {{ fetched | timestamp_custom('%d/%m/%Y %H:%M') }}
+      {% endif %}
       {% if state_attr(entity, 'completion') == 'idle' %}
       Modtaget uden slutmarkør — fuldstændighed er ikke bekræftet.
       {% endif %}
@@ -52,7 +57,10 @@ cards:
       Hentningen mislykkedes. Eventuelle tidligere poster vises nedenfor.
       {% endif %}
       {% if rows %}
-      Senest hentet: {{ as_timestamp(states(entity)) | timestamp_custom('%d/%m/%Y %H:%M') }}
+      {% set fetched = as_timestamp(states(entity), none) %}
+      {% if fetched is not none %}
+      Senest hentet: {{ fetched | timestamp_custom('%d/%m/%Y %H:%M') }}
+      {% endif %}
       {% if state_attr(entity, 'completion') == 'idle' %}
       Modtaget uden slutmarkør — fuldstændighed er ikke bekræftet.
       {% endif %}

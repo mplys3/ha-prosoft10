@@ -115,10 +115,12 @@ not verified real-world timestamps. Duplicate records are retained; malformed
 records remain visible with unknown date/time. Structured entries, like raw
 logs, are excluded from recorder history.
 
-Use [the combined log card](examples/prosoft-logs-card.yaml) in a dashboard:
-edit the dashboard, add a Manual card, and paste the YAML. Replace the two
-button and two sensor entity IDs if yours differ. The card uses built-in
-Entities and Markdown cards only. Fetch buttons and both dated tables appear
-together and update when the sensor attributes change. The integration does
-not automatically modify existing dashboards. Fetch the logs again after
-restarting Home Assistant.
+Use the [dashboard setup guide (Danish)](examples/README.md) to choose the correct complete file for your editor:
+
+- [One native card](examples/prosoft-logs-card.yaml)
+- [A complete new dashboard](examples/prosoft-logs-dashboard.yaml)
+- [A list item for an existing cards list](examples/prosoft-logs-card-list-item.yaml)
+- [One Ultra Card](examples/prosoft-logs-ultra-card.yaml)
+- [A complete new Ultra Card dashboard](examples/prosoft-logs-ultra-dashboard.yaml)
+
+The guide explains exactly where each file belongs and how to check entity IDs. Do not paste card YAML directly into a dashboard's root or append one card object to another. No existing dashboards are changed automatically. YAML/template checks do not substitute for live frontend validation; the Ultra example has been checked against Ultra Card 3.14.2 source but has not been tested in a running HA frontend.

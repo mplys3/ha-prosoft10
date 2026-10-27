@@ -1,0 +1,98 @@
+# ET ULTRA CARD: Erstat hele kortkonfigurationen i et nyt manuelt kort.
+# Kræver installeret og indlæst Ultra Card. Ikke til et enkelt Ultra-moduls editor.
+# Se examples/README.md; kontrollér de fire entitets-id’er.
+type: custom:ultra-card
+layout:
+  rows:
+  - id: prosoft-logs-row
+    column_layout: 1-col
+    columns:
+    - id: prosoft-logs-column
+      modules:
+      - id: prosoft-log-module-1
+        type: native_card
+        name: ProSOFT-logge
+        card_type: hui-entities-card
+        card_config:
+          type: entities
+          title: ProSOFT-logge
+          show_header_toggle: false
+          entities:
+          - entity: button.vaerksted_aqua_danmark_prosoft_10_hent_parameterlog
+            name: Hent parameterlog
+          - entity: button.vaerksted_aqua_danmark_prosoft_10_hent_haendelseslog
+            name: Hent hændelseslog
+      - id: prosoft-log-module-2
+        type: native_card
+        name: Parameterlog
+        card_type: hui-markdown-card
+        card_config:
+          type: markdown
+          title: Parameterlog
+          entity_id:
+          - sensor.vaerksted_aqua_danmark_prosoft_10_parameterlog
+          content: |-
+            {% set entity = 'sensor.vaerksted_aqua_danmark_prosoft_10_parameterlog' %}
+            {% set rows = state_attr(entity, 'entries') or [] %}
+            {% set status = state_attr(entity, 'status') %}
+            {% if status == 'fetching' %}
+            Henter log …
+            {% elif status == 'failed' %}
+            Hentningen mislykkedes. Eventuelle tidligere poster vises nedenfor.
+            {% endif %}
+            {% if rows %}
+            {% set fetched = as_timestamp(states(entity), none) %}
+            {% if fetched is not none %}
+            Senest hentet: {{ fetched | timestamp_custom('%d/%m/%Y %H:%M') }}
+            {% endif %}
+            {% if state_attr(entity, 'completion') == 'idle' %}
+            Modtaget uden slutmarkør — fuldstændighed er ikke bekræftet.
+            {% endif %}
+
+            | Dato | Klokkeslæt | Indhold |
+            | :--- | :--- | :--- |
+            {% for row in rows -%}
+            | {{ row.date or 'Ukendt' }} | {{ row.time or '—' }} | {{ row.content | e | replace('|', '&#124;') | replace('\n', ' ') | replace('\r', ' ') }} |
+            {% endfor %}
+            {% elif states(entity) not in ['unknown', 'unavailable'] %}
+            Ingen logposter modtaget.
+            {% else %}
+            Tryk på henteknappen ovenfor for at hente loggen.
+            {% endif %}
+      - id: prosoft-log-module-3
+        type: native_card
+        name: Hændelseslog
+        card_type: hui-markdown-card
+        card_config:
+          type: markdown
+          title: Hændelseslog
+          entity_id:
+          - sensor.vaerksted_aqua_danmark_prosoft_10_haendelseslog
+          content: |-
+            {% set entity = 'sensor.vaerksted_aqua_danmark_prosoft_10_haendelseslog' %}
+            {% set rows = state_attr(entity, 'entries') or [] %}
+            {% set status = state_attr(entity, 'status') %}
+            {% if status == 'fetching' %}
+            Henter log …
+            {% elif status == 'failed' %}
+            Hentningen mislykkedes. Eventuelle tidligere poster vises nedenfor.
+            {% endif %}
+            {% if rows %}
+            {% set fetched = as_timestamp(states(entity), none) %}
+            {% if fetched is not none %}
+            Senest hentet: {{ fetched | timestamp_custom('%d/%m/%Y %H:%M') }}
+            {% endif %}
+            {% if state_attr(entity, 'completion') == 'idle' %}
+            Modtaget uden slutmarkør — fuldstændighed er ikke bekræftet.
+            {% endif %}
+
+            | Dato | Klokkeslæt | Indhold |
+            | :--- | :--- | :--- |
+            {% for row in rows -%}
+            | {{ row.date or 'Ukendt' }} | {{ row.time or '—' }} | {{ row.content | e | replace('|', '&#124;') | replace('\n', ' ') | replace('\r', ' ') }} |
+            {% endfor %}
+            {% elif states(entity) not in ['unknown', 'unavailable'] %}
+            Ingen logposter modtaget.
+            {% else %}
+            Tryk på henteknappen ovenfor for at hente loggen.
+            {% endif %}
